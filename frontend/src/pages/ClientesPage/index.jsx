@@ -36,7 +36,7 @@ export default function ClientesPage() {
 
       arr.push(client);
 
-      setClient(arr);
+      setClient(...arr);
     } catch (error) {
       alert(error);
     }
