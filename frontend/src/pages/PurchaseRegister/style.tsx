@@ -107,7 +107,11 @@ export const Container = styled.div`
     background-color: crimson;
   }
 
-  .amount {
-    
+  .search {
+    flex-direction: row;
+    position: absolute;
+    width: 400px;
+    height: 50px;
+    top: 10px;
   }
 `

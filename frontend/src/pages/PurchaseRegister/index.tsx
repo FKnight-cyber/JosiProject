@@ -9,6 +9,7 @@ export default function PurchaseRegister() {
   const [items, setItems] = useState([]);
   const [confirm, setConfirm] = useState(false);
   const [total, setTotal] = useState(0);
+  const [nome, setNome] = useState('');
 
   const navigate = useNavigate();
 
@@ -70,6 +71,19 @@ export default function PurchaseRegister() {
     setTotal(soma);
   }
 
+  async function findByName(event) {
+    event.preventDefault();
+
+    try {
+      const { data:client } = await axios.get(`${import.meta.env.VITE_URL}/products?name=${nome}`);
+      const arr = [];
+
+      arr.push(client);
+      setProducts(...arr);
+    } catch (error) {
+      alert(error);
+    }
+  }
 
   const handleCheckboxChange = (event) => {
     const name = event.target.value;
@@ -88,6 +102,13 @@ export default function PurchaseRegister() {
 
   return(
     <Container>
+      <form className="search" onSubmit={findByName}>
+        <input type="text"
+          placeholder="Procurar"
+          value={nome}
+          onChange={e => setNome(e.target.value)}
+        />
+      </form>
       {
         confirm ?
         <>
@@ -101,8 +122,8 @@ export default function PurchaseRegister() {
         : 
         <>
          <div className="voltar" onClick={() => navigate(-1)}>
-        <IoArrowBackCircleSharp color="crimson" size={60} />
-      </div>
+          <IoArrowBackCircleSharp color="crimson" size={60} />
+        </div>
       <form>
         <div className="opcoes">
           {products.length > 0 ? renderProducts() : ""}
