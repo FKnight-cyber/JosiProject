@@ -15,13 +15,17 @@ import Payment from "./pages/Payment";
 import ClienteTransactions from "./pages/ClienteTransactions";
 import StockPage from "./pages/StockPage";
 import ProductUpdate from "./pages/ProductUpdate";
+import AddProduct from "./pages/AddProduct";
 
 export default function App(){
     const [info, setInfo] = useState();
+    const [purchaseCart, setPurchaseCart] = useState([]);
 
     const userContext = {
         info,
-        setInfo
+        setInfo,
+        purchaseCart,
+        setPurchaseCart
     }
 
     return(
@@ -41,6 +45,7 @@ export default function App(){
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/products/update/:id" element={<ProductUpdate />} />
                     <Route path="/purchases/:id" element={<PurchaseRegister />} />
+                    <Route path="/add/item/:id" element={<AddProduct />} />
                     <Route path="/relatorios" element={<StockPage />} />
                 </Routes>
             </UserContext.Provider>

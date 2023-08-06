@@ -15,7 +15,14 @@ async function getByName(name: string) {
 };
 
 async function filterByName(name: string) {
-  return await prisma.produto.findMany({where:{nome:{contains:name}}});
+  return await prisma.produto.findMany({
+    where: {
+      nome: {
+        startsWith: name,
+        mode: "insensitive"
+      }
+    }
+  });
 };
 
 async function getById(id: number) {

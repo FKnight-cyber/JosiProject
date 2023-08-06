@@ -12,6 +12,19 @@ export const Container = styled.div`
 
   position: relative;
 
+  .cartInfo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 20px;
+    right: 40px;
+
+    .number {
+      margin-right: 14px;
+    }
+  }
+
   form {
     height: 80vh;
     width: 90%;
@@ -34,7 +47,7 @@ export const Container = styled.div`
       display: flex;
       flex-wrap: wrap;
       width: 90%;
-      min-height: 70%;
+      min-height: 50%;
       overflow-y: scroll;
 
       label {
@@ -71,18 +84,52 @@ export const Container = styled.div`
 
   .opcoes {
     display: flex;
-    width: 100%;
+    flex-direction: column;
+    width: 30%;
+    height: 60%;
     border: 2px solid black;
-    min-height: 120px;
-    align-items: center;
-    padding-left: 12px;
+    padding: 12px;
+    margin-bottom: 80px;
+    overflow-y: scroll;
+
+    .product {
+      font-size: 18px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
   }
 
-  .item {
+  .p1 {
     display: flex;
     justify-content: space-between;
     width: 100%;
     margin-bottom: 10px;
+  }
+
+  .p2 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    form {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      height: 40px;
+      width: 700px;
+      transform: translateX(120px);
+
+      input {
+        width: 100px;
+        height: 24px;
+      }
+
+      button {
+        height: 24px;
+        width: 60px;
+      }
+    }
   }
 
   .confirmation {
