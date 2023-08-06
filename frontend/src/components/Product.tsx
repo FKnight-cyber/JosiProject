@@ -14,19 +14,20 @@ export default function Produtos(props, setChangeState, changeState) {
       alert(error);
     }
   }
-
-  return(
-    props.map((produto, index) => 
-    <Container key={index}>
-      <h1>Nome: {produto.nome} ({produto.medida})</h1>
-      <div className="options">
-        <Link to={`/products/update/${produto.id}`}>
-          <IoBrush color="purple" size={20} cursor="pointer" />
-        </Link>
-        <IoClose color="red" size={20} cursor="pointer" onClick={() => deleteProduto(produto.id)}/>
-      </div>
-    </Container>)
-  )
+  if(props.length > 0) {
+    return(
+      props.map((produto, index) => 
+      <Container key={index}>
+        <h1>Nome: {produto.nome} ({produto.medida})</h1>
+        <div className="options">
+          <Link to={`/products/update/${produto.id}`}>
+            <IoBrush color="purple" size={20} cursor="pointer" />
+          </Link>
+          <IoClose color="red" size={20} cursor="pointer" onClick={() => deleteProduto(produto.id)}/>
+        </div>
+      </Container>)
+    )
+  }
 }
 
 export const Container = styled.div`
