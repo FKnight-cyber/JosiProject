@@ -32,7 +32,6 @@ export default function AddProduct() {
       if (priceInput) {
         priceInput.focus();
       }
-      console.log(priceInput)
     }
     quantityInputRef.current = document.getElementById('quantity');
   }, [isPriceInputAvailable]);
