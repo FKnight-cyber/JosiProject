@@ -21,7 +21,12 @@ export default function AddProduct() {
     promise.then((res) => {
       setItem(res.data);
 
-      priceInputRef.current.focus();
+      const priceInput = document.getElementById('price');
+      console.log('Price Input:', priceInput);
+  
+      if (priceInput) {
+        priceInput.focus();
+      }
       
       quantityInputRef.current = document.getElementById('quantity');
     })
