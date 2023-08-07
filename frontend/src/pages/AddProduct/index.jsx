@@ -21,7 +21,9 @@ export default function AddProduct() {
       setItem(res.data);
 
       const priceInput = document.getElementById('price');
-      priceInput.focus();
+      if (priceInput) {
+        priceInput.focus();
+      }
       
       quantityInputRef.current = document.getElementById('quantity');
     })
