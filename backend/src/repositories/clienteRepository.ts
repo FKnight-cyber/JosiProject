@@ -11,8 +11,15 @@ async function getClients() {
   return await prisma.cliente.findMany({orderBy:[{id:'desc'}]});
 };
 
-async function clientByName(name:string) {
-  return await prisma.cliente.findFirst({where:{name}})
+async function clientByName(nome:string) {
+  return await prisma.cliente.findMany({
+    where: {
+      name: {
+        startsWith: nome,
+        mode: "insensitive"
+      }
+    }
+  });
 };
 
 async function clientById(id:number) {
