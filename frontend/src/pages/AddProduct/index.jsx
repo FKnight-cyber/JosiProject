@@ -9,6 +9,7 @@ export default function AddProduct() {
   const [price, setPrice] = useState();
   const [quantity, setQuantity] = useState();
   const quantityInputRef = useRef(null);
+  const priceInputRef = useRef(null);
   const { id } = useParams();
 
   const { purchaseCart, setPurchaseCart } = useContext(UserContext);
@@ -20,10 +21,7 @@ export default function AddProduct() {
     promise.then((res) => {
       setItem(res.data);
 
-      const priceInput = document.getElementById('price');
-      if (priceInput) {
-        priceInput.focus();
-      }
+      priceInputRef.current.focus();
       
       quantityInputRef.current = document.getElementById('quantity');
     })
@@ -73,6 +71,7 @@ export default function AddProduct() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 onKeyDown={handlePriceInputEnter}
+                ref={priceInputRef}
               />
             </div>
             <div>
