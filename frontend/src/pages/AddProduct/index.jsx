@@ -8,29 +8,34 @@ export default function AddProduct() {
   const [item, setItem] = useState();
   const [price, setPrice] = useState();
   const [quantity, setQuantity] = useState();
+  const [isPriceInputAvailable, setIsPriceInputAvailable] = useState(false);
   const quantityInputRef = useRef(null);
-  const priceInputRef = useRef(null);
   const { id } = useParams();
 
   const { purchaseCart, setPurchaseCart } = useContext(UserContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const promise = axios.get(`${import.meta.env.VITE_URL}/products/${id}`)
+    const promise = axios.get(`${import.meta.env.VITE_URL}/products/${id}`);
 
     promise.then((res) => {
       setItem(res.data);
 
-      const priceInput = document.getElementById('price');
-      console.log('Price Input:', priceInput);
-  
+      setIsPriceInputAvailable(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    // Focus on the price input when it becomes available
+    if (isPriceInputAvailable) {
+      const priceInput = document.getElementById("price");
       if (priceInput) {
         priceInput.focus();
       }
-      
-      quantityInputRef.current = document.getElementById('quantity');
-    })
-  }, []);
+      console.log(priceInput)
+    }
+    quantityInputRef.current = document.getElementById('quantity');
+  }, [isPriceInputAvailable]);
 
   const handlePriceInputEnter = (e) => {
     if (e.key === 'Enter') {
@@ -76,7 +81,6 @@ export default function AddProduct() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 onKeyDown={handlePriceInputEnter}
-                ref={priceInputRef}
               />
             </div>
             <div>
