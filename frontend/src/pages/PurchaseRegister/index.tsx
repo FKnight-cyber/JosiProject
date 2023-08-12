@@ -14,6 +14,7 @@ export default function PurchaseRegister() {
   const [editedItem, setEditedItem] = useState({id:99999});
   const [newQuantity, setNewQuantity] = useState(0);
   const [newPrice, setNewPrice] = useState(0);
+  const [isProductInputAvailable, setIsProductInputAvailable] = useState(false);
 
   const { purchaseCart, setPurchaseCart }:any = useContext(UserContext);
 
@@ -38,9 +39,22 @@ export default function PurchaseRegister() {
     const promise = axios.get(`${import.meta.env.VITE_URL}/products`)
 
     promise.then((res) => {
-      setProducts(res.data)
+      setProducts(res.data);
+      setIsProductInputAvailable(true);
     })
   }, [])
+
+  useEffect(() => {
+    // Focus on the price input when it becomes available
+    if (isProductInputAvailable) {
+      const productInput = document.getElementById("product");
+      if (productInput) {
+        productInput.focus();
+      }
+      console.log(productInput)
+    }
+    
+  }, [isProductInputAvailable]);
 
   function orgazineItems() {
     console.log(purchaseCart)
@@ -107,7 +121,7 @@ export default function PurchaseRegister() {
           <>
           <div className='p2'>
             <form onSubmit={handleSubmit}>
-              <input 
+              <input
                 type="number"
                 value={newQuantity}
                 onChange={(e) => setNewQuantity(Number(e.target.value))} 
@@ -174,6 +188,7 @@ export default function PurchaseRegister() {
           </div>
           <form className="search" onSubmit={findByName}>
             <input
+              id="product"
               type="text"
               placeholder="Procurar"
               value={nome}
