@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { CssBaseline } from '@mui/material';
 import GlobalStyle from "../src/themes/globalStyles";
 import UserContext from "./context/UserContext";
 import InitialPage from "./pages/InitialPage/index";
@@ -29,10 +31,24 @@ export default function App(){
         setPurchaseCart
     }
 
+    // Criar tema do Material-UI
+    const theme = createTheme({
+        palette: {
+            primary: {
+                main: '#1976d2',
+            },
+            secondary: {
+                main: '#dc004e',
+            },
+        },
+    });
+
     return(
-        <BrowserRouter>
-            <GlobalStyle />
-            <UserContext.Provider value={userContext}>
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <BrowserRouter>
+                <GlobalStyle />
+                <UserContext.Provider value={userContext}>
                 <Routes>
                     <Route path="/" element={<InitialPage />} />
                     <Route path="/client/add" element={<ClienteRegister />} />
@@ -52,5 +68,6 @@ export default function App(){
                 </Routes>
             </UserContext.Provider>
         </BrowserRouter>
+        </ThemeProvider>
     )
 }
