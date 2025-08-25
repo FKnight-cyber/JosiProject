@@ -91,15 +91,35 @@ export default function ClientePurchasesPage() {
       
       console.log('Response status:', response.status);
       console.log('Response data:', result);
-      console.log('Purchases array:', result.purchases);
-      console.log('Purchases length:', result.purchases?.length);
+      console.log('Response data type:', typeof result);
+      console.log('Is array?', Array.isArray(result));
       
-      setPurchases(result.purchases || []);
-      setTotalPages(result.totalPages || 1);
-      setTotalItems(result.total || 0);
+      // Verificar se o resultado é um array ou um objeto
+      let purchasesData, totalPagesData, totalItemsData;
+      
+      if (Array.isArray(result)) {
+        // Se é um array, usar diretamente
+        purchasesData = result;
+        totalPagesData = 1;
+        totalItemsData = result.length;
+        console.log('Result is array, using directly');
+      } else {
+        // Se é um objeto, extrair as propriedades
+        purchasesData = result.purchases || [];
+        totalPagesData = result.totalPages || 1;
+        totalItemsData = result.total || 0;
+        console.log('Result is object, extracting properties');
+      }
+      
+      console.log('Final purchases data:', purchasesData);
+      console.log('Final purchases length:', purchasesData?.length);
+      
+      setPurchases(purchasesData);
+      setTotalPages(totalPagesData);
+      setTotalItems(totalItemsData);
       setPurchase({});
       
-      console.log('State updated - purchases length:', result.purchases?.length);
+      console.log('State updated - purchases length:', purchasesData?.length);
     } catch (error) {
       console.error('Erro ao buscar compras:', error);
       console.error('Error details:', error.response?.data);
