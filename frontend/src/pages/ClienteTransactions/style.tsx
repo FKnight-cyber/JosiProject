@@ -18,23 +18,12 @@ export const Container = styled.div`
     left: 2px;
   }
 
-  header {
-    display: flex;
-    justify-content: space-around;
-    width: 700px;
-
-    input {
-      margin-right: 10px;
-    }
-  }
-
   .transactions {
     margin-top: 20px;
-    width: 600px;
-    height: 500px;
-    overflow-y: scroll;
-    border: solid 2px #000;
-    padding: 10px;
+    width: 100%;
+    min-height: 400px;
+    padding: 20px;
+    border-radius: 8px;
   }
 
   .transaction {

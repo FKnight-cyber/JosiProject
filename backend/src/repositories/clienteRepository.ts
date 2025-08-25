@@ -4,7 +4,12 @@ import { ClienteCreationDTO } from '../dtos/clienteDtos';
 import purchaseRepository from './purchaseRepository';
 
 async function insert(data:ClienteCreationDTO) {
-  await prisma.cliente.create({data});
+  try {
+    await prisma.cliente.create({data});
+  } catch (error) {
+    console.error('Erro no repository:', error);
+    throw error;
+  }
 };
 
 async function getClients() {

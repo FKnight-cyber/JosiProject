@@ -11,17 +11,19 @@ export async function newPurchase(req:Request, res:Response) {
 
 export async function getPurchases(req:Request, res:Response) {
   const id = Number(req.params.id);
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 20;
 
-  const { initial, final } = req.query;
+  const { initial, final, status } = req.query;
 
   if(initial && final) {
-    const purchases = await purchaseServices.getPurchasesByDate(id,initial.toString(),final.toString());
-    return res.status(200).send(purchases);
+    const result = await purchaseServices.getPurchasesByDate(id, initial.toString(), final.toString(), page, limit, status?.toString());
+    return res.status(200).send(result);
   }
 
-  const purchases = await purchaseServices.getPurchases(id);
+  const result = await purchaseServices.getPurchases(id, page, limit, status?.toString());
 
-  return res.status(200).send(purchases);
+  return res.status(200).send(result);
 };
 
 export async function getTransactions(req:Request, res:Response) {

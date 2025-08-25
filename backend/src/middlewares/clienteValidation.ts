@@ -6,7 +6,9 @@ export default function clienteValidation(req:Request,
     next:NextFunction) {
         const { error } = clienteSchema.validate(req.body, {abortEarly:false});
 
-        if(error) return res.status(422).send(error.details.map(detail => detail.message));
+        if(error) {
+            return res.status(422).json(error.details.map(detail => detail.message));
+        }
 
         next();
 };

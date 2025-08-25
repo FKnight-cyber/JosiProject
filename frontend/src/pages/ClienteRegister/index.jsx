@@ -8,8 +8,8 @@ export default function ClienteRegister() {
   const [name, setName] = useState('');
   const [telefone, setTelefone] = useState('');
   const [pix, setPix] = useState('');
-  const [cpf, setCpf] = useState();
-  const [cnpj, setCnpj] = useState();
+  const [cpf, setCpf] = useState('');
+  const [cnpj, setCnpj] = useState('');
   const [rua, setRua] = useState('');
   const [bairro, setBairro] = useState('');
   const [cep, setCep] = useState('');
@@ -35,11 +35,31 @@ export default function ClienteRegister() {
     }
 
     try {
-      await axios.post(`${import.meta.env.VITE_URL}/register`,body);
+      await axios.post(`${import.meta.env.VITE_URL}/register`, body);
       alert("Sucesso!");
       navigate('/');
     } catch (error) {
-      alert("Falha ao cadastrar cliente!");
+      console.error('Erro completo:', error);
+      
+      if (error.response) {
+        console.error('Status:', error.response.status);
+        console.error('Dados:', error.response.data);
+        
+        if (error.response.status === 422) {
+          const errorMessages = error.response.data;
+          if (Array.isArray(errorMessages)) {
+            alert(`Erros de validação:\n${errorMessages.join('\n')}`);
+          } else {
+            alert(`Erro de validação: ${errorMessages}`);
+          }
+        } else {
+          alert(`Erro ${error.response.status}: ${error.response.data}`);
+        }
+      } else if (error.request) {
+        alert("Erro de conexão: Não foi possível conectar ao servidor");
+      } else {
+        alert(`Erro: ${error.message}`);
+      }
     }
   }
 

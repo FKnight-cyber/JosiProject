@@ -2,10 +2,16 @@ import { Request, Response } from "express";
 import clienteServices from "../services/clienteServices";
 
 export async function newClient(req:Request, res:Response) {
+  try {
+    console.log('Dados recebidos no controller:', req.body);
 
-  await clienteServices.register(req.body);
+    await clienteServices.register(req.body);
 
-  return res.status(201).send("Registrado!");
+    return res.status(201).send("Registrado!");
+  } catch (error) {
+    console.error('Erro no controller:', error);
+    return res.status(500).json({ error: error.message });
+  }
 };
 
 export async function getClients(req:Request, res:Response) {

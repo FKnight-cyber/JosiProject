@@ -16,6 +16,7 @@ import ClienteTransactions from "./pages/ClienteTransactions";
 import StockPage from "./pages/StockPage";
 import ProductUpdate from "./pages/ProductUpdate";
 import AddProduct from "./pages/AddProduct";
+import AdiantamentoPage from "./pages/AdiantamentoPage";
 
 export default function App(){
     const [info, setInfo] = useState();
@@ -47,6 +48,7 @@ export default function App(){
                     <Route path="/purchases/:id" element={<PurchaseRegister />} />
                     <Route path="/add/item/:id" element={<AddProduct />} />
                     <Route path="/relatorios" element={<StockPage />} />
+                    <Route path="/adiantamento/:clientId" element={<AdiantamentoPage />} />
                 </Routes>
             </UserContext.Provider>
         </BrowserRouter>

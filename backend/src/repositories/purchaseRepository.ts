@@ -3,7 +3,14 @@ import prisma from "../database";
 import { PurchaseCreationDTO, PurchaseData } from "../dtos/purchaseDtos";
 
 async function insert(data:PurchaseCreationDTO) {
-  await prisma.purchase.create({data});
+  return await prisma.purchase.create({data});
+};
+
+async function updatePurchase(id: number, data: Partial<Purchase>) {
+  return await prisma.purchase.update({
+    where: { id },
+    data
+  });
 };
 
 async function registerBoughtProduct(data:PurchaseData) {
@@ -16,6 +23,20 @@ async function getPurchaseByClientId(clientId:number) {
 
 async function getPurchasesByClientId(clientId:number) {
   return await prisma.purchase.findMany({where:{clientId},orderBy:{id:'desc'}})
+};
+
+async function getPurchasesByClientIdPaginated(clientId:number, limit:number, offset:number) {
+  return await prisma.purchase.findMany({
+    where: { clientId },
+    orderBy:{id:'desc'},
+    take: limit,
+    skip: offset
+  })
+};
+
+async function getTotalPurchasesByClientId(clientId:number) {
+  const result = await prisma.purchase.count({where: { clientId }});
+  return result;
 };
 
 async function getPurchaseById(id:number) {
@@ -47,6 +68,34 @@ async function getClientPurchasesByDate(clientId: number, initial:Date, final:Da
  }}})
 }
 
+async function getClientPurchasesByDatePaginated(clientId: number, initial:Date, final:Date, limit:number, offset:number) {
+  return await prisma.purchase.findMany({
+    where: {
+      clientId,
+      createdAt: {
+        gte: initial,
+        lte: final
+      }
+    },
+    orderBy:{id:'desc'},
+    take: limit,
+    skip: offset
+  });
+};
+
+async function getTotalPurchasesByClientIdAndDate(clientId: number, initial:Date, final:Date) {
+  const result = await prisma.purchase.count({
+    where: {
+      clientId,
+      createdAt: {
+        gte: initial,
+        lte: final
+      }
+    }
+  });
+  return result;
+};
+
 async function getAllPurchasesByClientId(clientId:number) {
   return await prisma.purchase.findMany({where:{clientId}});
 }
@@ -60,13 +109,18 @@ const purchaseRepository = {
   insert,
   getClientPurchases,
   getClientPurchasesByDate,
+  getClientPurchasesByDatePaginated,
+  getTotalPurchasesByClientIdAndDate,
   getPurchaseByClientId,
   getPurchasesByClientId,
+  getPurchasesByClientIdPaginated,
+  getTotalPurchasesByClientId,
   getPurchaseById,
   registerBoughtProduct,
   addPayment,
   getAllPurchasesByClientId,
-  removePurchase
+  removePurchase,
+  updatePurchase
 };
 
 export default purchaseRepository;

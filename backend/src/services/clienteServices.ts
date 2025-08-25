@@ -7,7 +7,7 @@ async function register(data:ClienteCreationDTO) {
   try {
     await clienteRepository.insert(data);
   } catch (error) {
-    console.log(error);
+    console.error('Erro no service:', error);
     throw checkError(409,"registration failed");
   }
 };

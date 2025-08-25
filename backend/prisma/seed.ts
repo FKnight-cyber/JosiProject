@@ -7,7 +7,7 @@ const data = {
   name: "ANTÔNIO GOUVÊA",
   description: "RECICLAGEM ALIANÇA, UM COMPROMISSO COM VOCÊ",
   telefone: "85988883524",
-  cnpj: "31014374000190",
+  cnpj: "49.940.808/0001-48",
   rua: "RUA COSME E JERÔNIMO, Nº 813 GALPÃO",
   bairro: "MONDUBIM",
   cep: "60765378",

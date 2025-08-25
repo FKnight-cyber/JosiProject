@@ -20,3 +20,7 @@ export type PurchaseData = {
   price: number,
   quantity: number
 }
+
+export type PurchaseWithStatus = Purchase & {
+  status: string;
+}

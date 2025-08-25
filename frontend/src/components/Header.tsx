@@ -15,7 +15,7 @@ export default function Header(props) {
           <h2>Bairro: {props.bairro} - CEP: {props.cep}</h2>
           <h2>{props.cidade}/{props.estado}</h2>
           <h2>Fone: {props.telefone}</h2>
-          <h2>JM ESCOBAR - CNPJ: {props.cnpj}</h2>
+          <h2>PH ESCOBAR TORRES LTDA. - CNPJ: {props.cnpj}</h2>
       </div>
     </Container>
   )

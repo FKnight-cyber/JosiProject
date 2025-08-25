@@ -11,6 +11,7 @@ export const Container = styled.div`
     justify-content: center;
     align-items: center;
     height: 40px;
+    position: relative;
 
     h3 {
       margin-right: 240px;
@@ -66,16 +67,67 @@ export const Container = styled.div`
     margin-top: 6px;
     margin-bottom: 6px;
   }
+
+  /* Estilos para o ícone de alerta */
+  .alert-icon {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Estilos para ocultar elementos durante impressão/PDF */
+  @media print {
+    .alert-icon,
+    .adiantamento-button {
+      display: none !important;
+    }
+  }
+
+  /* Classe para elementos que devem ser ocultos na exportação PDF */
+  .hide-on-pdf {
+    @media print {
+      display: none !important;
+    }
+  }
 `
 
 export const Purchase = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 12px;
+  min-height: 12px;
+  height: auto;
   width: 100%;
   padding: 20px;
   margin-bottom: 2px;
+
+  &.total-row {
+    border-top: 2px solid #000;
+    font-weight: bold;
+    background-color: #f5f5f5;
+    height: auto;
+    min-height: 12px;
+    
+    .left {
+      h5 {
+        font-weight: bold;
+        
+        &.move {
+          font-weight: bold;
+        }
+      }
+    }
+  }
 
   .left {
     display: flex;
@@ -101,12 +153,11 @@ export const Purchase = styled.div`
 
   .detalhes {
     width: 300px;
-    height: 26px;
+    min-height: 26px;
+    height: auto;
     word-wrap: break-word;
-    overflow-y: scroll;
-
-    ::-webkit-scrollbar {
-    	display: none;
-	  }	
+    overflow: visible;
+    white-space: normal;
+    line-height: 1.2;
   }
 `

@@ -37,6 +37,7 @@ model Cliente {
   cidade String
   estado String
   purchases Purchase[]
+  adiantamentos Adiantamento[]
 
   @@map("clientes")
 }
@@ -67,9 +68,22 @@ model Purchase {
   detalhe String[] @default([])
   valor Float[] @default([])
   wasPaid Boolean @default(false)
+  valorAdiantamentos Float @default(0)
+  status String @default("PENDENTE") // PENDENTE, CONCLUIDO
   createdAt DateTime @default(now())
   cliente   Cliente @relation(fields: [clientId], references: [id])
   register PurchaseProduct[]
   
   @@map("purchases")
+}
+
+model Adiantamento {
+  id Int @id @default(autoincrement())
+  clientId Int
+  valor Float
+  descricao String?
+  dataAdiantamento DateTime @default(now())
+  cliente Cliente @relation(fields: [clientId], references: [id])
+  
+  @@map("adiantamentos")
 }
