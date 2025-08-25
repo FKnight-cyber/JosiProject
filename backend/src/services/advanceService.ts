@@ -169,6 +169,61 @@ async function processAdvancePurchase(clientId, purchaseId, valorUsado) {
   }
 }
 
+// Nova função para restaurar adiantamentos quando uma compra é excluída
+async function restoreAdvancesFromDeletedPurchase(clientId, purchaseId, valorAdiantamentosAplicados) {
+  try {
+    if (valorAdiantamentosAplicados <= 0) {
+      return { message: 'No advances to restore' };
+    }
+    
+    // Buscar todos os adiantamentos do cliente
+    const advances = await advanceRepository.findByClientId(clientId);
+    
+    // Filtrar apenas os débitos automáticos relacionados a esta compra específica
+    const debitosAutomaticos = advances.filter(advance => 
+      advance.valor < 0 && 
+      advance.descricao && 
+      advance.descricao.includes(`Débito automático na compra ${purchaseId}`)
+    );
+    
+    if (debitosAutomaticos.length === 0) {
+      return { message: 'No automatic debits found for this purchase' };
+    }
+    
+    let totalRestaurado = 0;
+    const advancesRestored = [];
+    
+    // Restaurar cada débito automático
+    for (const debito of debitosAutomaticos) {
+      const valorRestaurado = Math.abs(debito.valor); // Converter negativo para positivo
+      
+      const novoAdiantamento = {
+        clientId: clientId,
+        valor: valorRestaurado,
+        descricao: `Restauração de adiantamento - Compra ${purchaseId} excluída - ${debito.descricao?.replace('Débito automático na compra', 'Originalmente aplicado na compra') || 'Adiantamento restaurado'}`
+      };
+      
+      await advanceRepository.insert(novoAdiantamento);
+      totalRestaurado += valorRestaurado;
+      advancesRestored.push({
+        originalDebitId: debito.id,
+        valorRestaurado: valorRestaurado,
+        descricao: novoAdiantamento.descricao
+      });
+    }
+    
+    return {
+      message: 'Advances restored successfully',
+      totalRestaurado,
+      advancesRestored,
+      debitosProcessados: debitosAutomaticos.length
+    };
+  } catch (error) {
+    console.error('Error restoring advances from deleted purchase:', error);
+    throw checkError(400, "Error restoring advances from deleted purchase");
+  }
+}
+
 const advanceService = {
   register,
   findByClientId,
@@ -178,7 +233,8 @@ const advanceService = {
   removeById,
   calculatePendingAdvances,
   applyAdvancesToPurchase,
-  processAdvancePurchase
+  processAdvancePurchase,
+  restoreAdvancesFromDeletedPurchase
 };
 
 export default advanceService;

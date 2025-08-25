@@ -374,7 +374,29 @@ async function getStockInfo(initial:string, final:string) {
 }
 
 async function remove(id:number) {
-  await purchaseRepository.removePurchase(id);
+  try {
+    // Buscar a compra antes de excluir para verificar se tem adiantamentos aplicados
+    const purchase = await purchaseRepository.getPurchaseById(id);
+    
+    if (!purchase) {
+      throw new Error('Purchase not found');
+    }
+    
+    // Se a compra tem adiantamentos aplicados automaticamente, restaurá-los
+    if (purchase.valorAdiantamentos > 0) {
+      const restoreResult = await advanceService.restoreAdvancesFromDeletedPurchase(
+        purchase.clientId, 
+        purchase.id, 
+        purchase.valorAdiantamentos
+      );
+    }
+    
+    // Agora excluir a compra
+    await purchaseRepository.removePurchase(id);
+  } catch (error) {
+    console.error('Error removing purchase:', error);
+    throw error;
+  }
 }
 
 async function markAsCompleted(id:number) {
