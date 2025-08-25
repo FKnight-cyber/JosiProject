@@ -144,8 +144,35 @@ export default function ClientePurchasesPage() {
   }
 
   function calculatePurchaseValue(purchase) {
-    // Mostrar apenas o valor dos produtos na tabela
-    return purchase.valorTotal || 0;
+    console.log('=== DEBUG CALCULATE VALUE ===');
+    console.log('Purchase:', purchase);
+    console.log('Purchase.valor:', purchase.valor);
+    console.log('Purchase.valorTotal:', purchase.valorTotal);
+    
+    // Se tem valorTotal, usar ele
+    if (purchase.valorTotal) {
+      console.log('Using valorTotal:', purchase.valorTotal);
+      return purchase.valorTotal;
+    }
+    
+    // Se tem array de valores, somar todos
+    if (purchase.valor && Array.isArray(purchase.valor) && purchase.valor.length > 0) {
+      const total = purchase.valor.reduce((sum, val) => sum + (val || 0), 0);
+      console.log('Calculated from valor array:', total);
+      return total;
+    }
+    
+    // Se tem produtos, calcular a partir dos produtos
+    if (purchase.produtos && Array.isArray(purchase.produtos) && purchase.produtos.length > 0) {
+      const total = purchase.produtos.reduce((sum, produto) => {
+        return sum + ((produto.price || 0) * (produto.quantity || 0));
+      }, 0);
+      console.log('Calculated from produtos:', total);
+      return total;
+    }
+    
+    console.log('No value found, returning 0');
+    return 0;
   }
 
   function getStatus(purchase) {
@@ -268,12 +295,13 @@ export default function ClientePurchasesPage() {
         <Typography variant="body1">Purchases length: {purchases?.length || 0}</Typography>
       </Box>
       
-      {purchases && purchases.length > 0 && (
-        <Box sx={{ width: '100%' }}>
-          <Paper sx={{ boxShadow: 3 }}>
-            <Box sx={{ p: 2, backgroundColor: 'red', color: 'white' }}>
-              <Typography variant="h6">Tabela deve aparecer aqui - Purchases: {purchases.length}</Typography>
-            </Box>
+             {purchases && purchases.length > 0 && (
+         <Box sx={{ width: '100%' }}>
+           {console.log('Renderizando tabela, purchases:', purchases, 'length:', purchases.length)}
+           <Paper sx={{ boxShadow: 3 }}>
+             <Box sx={{ p: 2, backgroundColor: 'red', color: 'white' }}>
+               <Typography variant="h6">Tabela deve aparecer aqui - Purchases: {purchases.length}</Typography>
+             </Box>
             <TableContainer>
               <Table sx={{ minWidth: 650 }} aria-label="tabela de compras">
                 <TableHead>
