@@ -289,19 +289,11 @@ export default function ClientePurchasesPage() {
         </Box>
       </Box>
       
-      {/* Teste simples com MUI */}
-      <Box sx={{ mt: 2, p: 2, backgroundColor: 'blue', color: 'white' }}>
-        <Typography variant="h6">Teste MUI - Se você vê isso, o MUI está funcionando</Typography>
-        <Typography variant="body1">Purchases length: {purchases?.length || 0}</Typography>
-      </Box>
       
-             {purchases && purchases.length > 0 && (
+      {purchases && purchases.length > 0 && (
          <Box sx={{ width: '100%' }}>
            {console.log('Renderizando tabela, purchases:', purchases, 'length:', purchases.length)}
            <Paper sx={{ boxShadow: 3 }}>
-             <Box sx={{ p: 2, backgroundColor: 'red', color: 'white' }}>
-               <Typography variant="h6">Tabela deve aparecer aqui - Purchases: {purchases.length}</Typography>
-             </Box>
             <TableContainer>
               <Table sx={{ minWidth: 650 }} aria-label="tabela de compras">
                 <TableHead>

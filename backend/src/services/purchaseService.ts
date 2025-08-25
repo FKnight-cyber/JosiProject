@@ -243,6 +243,12 @@ async function getPurchaseInfo(id:number) {
   const cliente = await clienteRepository.clientById(purchase.clientId);
   const purchases = await purchaseRepository.getClientPurchases(id);
 
+  // Calcular o valor total da compra (apenas produtos)
+  let valorTotal = 0;
+  purchases.forEach(produto => {
+    valorTotal += produto.price * produto.quantity;
+  });
+
   const data = {
     fornecedor: cliente.name,
     data: purchase.createdAt,
@@ -252,7 +258,8 @@ async function getPurchaseInfo(id:number) {
     wasPaid: purchase.wasPaid,
     status: purchase.status,
     valorAdiantamentos: purchase.valorAdiantamentos,
-    produtos: purchases
+    produtos: purchases,
+    valorTotal: valorTotal // Adicionar o valorTotal calculado
   }
 
   // Calcular valor restante: produtos - adiantamentos - pagamentos
