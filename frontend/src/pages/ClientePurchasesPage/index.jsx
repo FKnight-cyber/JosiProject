@@ -66,7 +66,11 @@ export default function ClientePurchasesPage() {
 
   async function fetchPurchases() {
     try {
-      let url = `${import.meta.env.VITE_URL}/clients/${id}/purchases?page=${currentPage}&limit=${itemsPerPage}`;
+      // Determinar a URL base baseada no ambiente
+      const baseURL = import.meta.env.VITE_URL || 
+                     (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://mycontrol-production.up.railway.app');
+      
+      let url = `${baseURL}/clients/${id}/purchases?page=${currentPage}&limit=${itemsPerPage}`;
       
       if (initialDate && finalDate) {
         url += `&initial=${initialDate}&final=${finalDate}`;
@@ -76,15 +80,29 @@ export default function ClientePurchasesPage() {
         url += `&status=${statusFilter}`;
       }
       
+      console.log('=== DEBUG FETCH PURCHASES ===');
+      console.log('URL:', url);
+      console.log('Base URL:', baseURL);
+      console.log('VITE_URL:', import.meta.env.VITE_URL);
+      console.log('Window location:', window.location.hostname);
+      
       const response = await axios.get(url);
       const result = response.data;
+      
+      console.log('Response status:', response.status);
+      console.log('Response data:', result);
+      console.log('Purchases array:', result.purchases);
+      console.log('Purchases length:', result.purchases?.length);
       
       setPurchases(result.purchases || []);
       setTotalPages(result.totalPages || 1);
       setTotalItems(result.total || 0);
       setPurchase({});
+      
+      console.log('State updated - purchases length:', result.purchases?.length);
     } catch (error) {
       console.error('Erro ao buscar compras:', error);
+      console.error('Error details:', error.response?.data);
       setPurchases([]);
     }
   }
@@ -224,9 +242,18 @@ export default function ClientePurchasesPage() {
         </Box>
       </Box>
       
+      {/* Teste simples com MUI */}
+      <Box sx={{ mt: 2, p: 2, backgroundColor: 'blue', color: 'white' }}>
+        <Typography variant="h6">Teste MUI - Se você vê isso, o MUI está funcionando</Typography>
+        <Typography variant="body1">Purchases length: {purchases?.length || 0}</Typography>
+      </Box>
+      
       {purchases && purchases.length > 0 && (
         <Box sx={{ width: '100%' }}>
           <Paper sx={{ boxShadow: 3 }}>
+            <Box sx={{ p: 2, backgroundColor: 'red', color: 'white' }}>
+              <Typography variant="h6">Tabela deve aparecer aqui - Purchases: {purchases.length}</Typography>
+            </Box>
             <TableContainer>
               <Table sx={{ minWidth: 650 }} aria-label="tabela de compras">
                 <TableHead>

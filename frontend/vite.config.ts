@@ -5,7 +5,25 @@ import macrosPlugin from "vite-plugin-babel-macros"
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      jsxImportSource: '@emotion/react',
+      babel: {
+        plugins: ['@emotion/babel-plugin']
+      }
+    }),
     macrosPlugin(),
   ],
+  optimizeDeps: {
+    include: ['@mui/material', '@emotion/react', '@emotion/styled']
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          mui: ['@mui/material', '@mui/icons-material'],
+          vendor: ['react', 'react-dom']
+        }
+      }
+    }
+  }
 });
