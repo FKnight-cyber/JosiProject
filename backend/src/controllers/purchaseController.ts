@@ -73,3 +73,14 @@ export async function removePurchase(req:Request, res:Response) {
 
   return res.status(200).send("OK");
 }
+
+export async function markPurchaseAsCompleted(req:Request, res:Response) {
+  const id = Number(req.params.id);
+
+  try {
+    await purchaseServices.markAsCompleted(id);
+    return res.status(200).send("Compra marcada como concluída!");
+  } catch (error) {
+    return res.status(400).send(error.message);
+  }
+}

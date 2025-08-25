@@ -27,7 +27,8 @@ import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  CheckCircle as CheckCircleIcon
 } from "@mui/icons-material";
 
 export default function ClientePurchasesPage() {
@@ -80,19 +81,8 @@ export default function ClientePurchasesPage() {
         url += `&status=${statusFilter}`;
       }
       
-      console.log('=== DEBUG FETCH PURCHASES ===');
-      console.log('URL:', url);
-      console.log('Base URL:', baseURL);
-      console.log('VITE_URL:', import.meta.env.VITE_URL);
-      console.log('Window location:', window.location.hostname);
-      
       const response = await axios.get(url);
       const result = response.data;
-      
-      console.log('Response status:', response.status);
-      console.log('Response data:', result);
-      console.log('Response data type:', typeof result);
-      console.log('Is array?', Array.isArray(result));
       
       // Verificar se o resultado é um array ou um objeto
       let purchasesData, totalPagesData, totalItemsData;
@@ -102,27 +92,18 @@ export default function ClientePurchasesPage() {
         purchasesData = result;
         totalPagesData = 1;
         totalItemsData = result.length;
-        console.log('Result is array, using directly');
       } else {
         // Se é um objeto, extrair as propriedades
         purchasesData = result.purchases || [];
         totalPagesData = result.totalPages || 1;
         totalItemsData = result.total || 0;
-        console.log('Result is object, extracting properties');
       }
-      
-      console.log('Final purchases data:', purchasesData);
-      console.log('Final purchases length:', purchasesData?.length);
       
       setPurchases(purchasesData);
       setTotalPages(totalPagesData);
       setTotalItems(totalItemsData);
       setPurchase({});
-      
-      console.log('State updated - purchases length:', purchasesData?.length);
     } catch (error) {
-      console.error('Erro ao buscar compras:', error);
-      console.error('Error details:', error.response?.data);
       setPurchases([]);
     }
   }
@@ -137,41 +118,60 @@ export default function ClientePurchasesPage() {
     try {
       await axios.delete(`${import.meta.env.VITE_URL}/purchases/${purchaseId}/delete`);
       alert("Registro removido!");
-      setChangeState(changeState+1);
+      
+      // Atualizar o estado local imediatamente
+      setPurchases(prevPurchases => 
+        prevPurchases.filter(purchase => purchase.id !== purchaseId)
+      );
+      
+      // Também incrementar o changeState para garantir que os dados sejam recarregados
+      setChangeState(prev => prev + 1);
     } catch (error) {
       alert(error);
     }
   }
 
+  async function markPurchaseAsCompleted(purchaseId) {
+    try {
+      await axios.put(`${import.meta.env.VITE_URL}/purchases/${purchaseId}/complete`);
+      alert("Compra marcada como concluída!");
+      
+      // Atualizar o estado local imediatamente
+      setPurchases(prevPurchases => 
+        prevPurchases.map(purchase => 
+          purchase.id === purchaseId 
+            ? { ...purchase, status: "CONCLUIDO", wasPaid: true }
+            : purchase
+        )
+      );
+      
+      // Também incrementar o changeState para garantir que os dados sejam recarregados
+      setChangeState(prev => prev + 1);
+    } catch (error) {
+      alert("Erro ao marcar compra como concluída!");
+    }
+  }
+
   function calculatePurchaseValue(purchase) {
-    console.log('=== DEBUG CALCULATE VALUE ===');
-    console.log('Purchase:', purchase);
-    console.log('Purchase.valor:', purchase.valor);
-    console.log('Purchase.valorTotal:', purchase.valorTotal);
     
-    // Se tem valorTotal, usar ele
     if (purchase.valorTotal) {
-      console.log('Using valorTotal:', purchase.valorTotal);
       return purchase.valorTotal;
     }
     
     // Se tem array de valores, somar todos
     if (purchase.valor && Array.isArray(purchase.valor) && purchase.valor.length > 0) {
       const total = purchase.valor.reduce((sum, val) => sum + (val || 0), 0);
-      console.log('Calculated from valor array:', total);
       return total;
     }
     
-    // Se tem produtos, calcular a partir dos produtos
     if (purchase.produtos && Array.isArray(purchase.produtos) && purchase.produtos.length > 0) {
       const total = purchase.produtos.reduce((sum, produto) => {
         return sum + ((produto.price || 0) * (produto.quantity || 0));
       }, 0);
-      console.log('Calculated from produtos:', total);
+ 
       return total;
     }
     
-    console.log('No value found, returning 0');
     return 0;
   }
 
@@ -292,7 +292,6 @@ export default function ClientePurchasesPage() {
       
       {purchases && purchases.length > 0 && (
          <Box sx={{ width: '100%' }}>
-           {console.log('Renderizando tabela, purchases:', purchases, 'length:', purchases.length)}
            <Paper sx={{ boxShadow: 3 }}>
             <TableContainer>
               <Table sx={{ minWidth: 650 }} aria-label="tabela de compras">
@@ -355,6 +354,16 @@ export default function ClientePurchasesPage() {
                               title="Efetuar pagamento"
                             >
                               <EditIcon />
+                            </IconButton>
+                          )}
+                          
+                          {purchase.status !== "CONCLUIDO" && (
+                            <IconButton
+                              color="success"
+                              onClick={() => markPurchaseAsCompleted(purchase.id)}
+                              title="Alterar Status para Concluído"
+                            >
+                              <CheckCircleIcon />
                             </IconButton>
                           )}
                           

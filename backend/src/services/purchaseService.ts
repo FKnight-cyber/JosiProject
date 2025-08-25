@@ -377,6 +377,22 @@ async function remove(id:number) {
   await purchaseRepository.removePurchase(id);
 }
 
+async function markAsCompleted(id:number) {
+  const purchase = await purchaseRepository.getPurchaseById(id);
+  
+  if (!purchase) {
+    throw new Error('Purchase not found');
+  }
+  
+  // Atualizar o status para CONCLUIDO e wasPaid para true
+  const updateData = {
+    status: "CONCLUIDO",
+    wasPaid: true
+  };
+  
+  await purchaseRepository.updatePurchase(id, updateData);
+}
+
 const purchaseServices = {
   insert,
   remove,
@@ -385,7 +401,8 @@ const purchaseServices = {
   getPurchasesByDate,
   getTransactions,
   payment,
-  getStockInfo
+  getStockInfo,
+  markAsCompleted
 };
 
 function calculateTotal(purchases:any) {
