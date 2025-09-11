@@ -6,8 +6,8 @@ import UserContext from "../../context/UserContext";
 
 export default function AddProduct() {
   const [item, setItem] = useState();
-  const [price, setPrice] = useState();
-  const [quantity, setQuantity] = useState();
+  const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState('');
   const [isPriceInputAvailable, setIsPriceInputAvailable] = useState(false);
   const quantityInputRef = useRef(null);
   const { id } = useParams();
@@ -56,8 +56,8 @@ export default function AddProduct() {
     const purchase = {
       id,
       name: item.nome,
-      price,
-      quantity
+      price: Number(price),
+      quantity: Number(quantity)
     }
   
     const arr = [...purchaseCart, purchase];

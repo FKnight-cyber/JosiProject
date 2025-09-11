@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
+import { SnackbarProvider } from 'notistack';
 import GlobalStyle from "../src/themes/globalStyles";
 import UserContext from "./context/UserContext";
 import InitialPage from "./pages/InitialPage/index";
@@ -46,10 +47,11 @@ export default function App(){
     return(
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <BrowserRouter>
-                <GlobalStyle />
-                <UserContext.Provider value={userContext}>
-                <Routes>
+            <SnackbarProvider maxSnack={3}>
+                <BrowserRouter>
+                    <GlobalStyle />
+                    <UserContext.Provider value={userContext}>
+                    <Routes>
                     <Route path="/" element={<InitialPage />} />
                     <Route path="/client/add" element={<ClienteRegister />} />
                     <Route path="/clients" element={<ClientesPage />} />
@@ -65,9 +67,10 @@ export default function App(){
                     <Route path="/add/item/:id" element={<AddProduct />} />
                     <Route path="/relatorios" element={<StockPage />} />
                     <Route path="/adiantamento/:clientId" element={<AdiantamentoPage />} />
-                </Routes>
-            </UserContext.Provider>
-        </BrowserRouter>
+                    </Routes>
+                    </UserContext.Provider>
+                </BrowserRouter>
+            </SnackbarProvider>
         </ThemeProvider>
     )
 }

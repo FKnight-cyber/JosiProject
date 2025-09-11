@@ -13,12 +13,14 @@ import {
   Divider,
   Pagination,
   Stack,
+  CircularProgress,
 } from "@mui/material";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ptBR } from 'date-fns/locale';
 import { Add, AttachMoney, Inventory, TrendingUp, CalendarToday } from "@mui/icons-material";
+import { useSnackbar } from 'notistack';
 
 export default function ClienteTransactions() {
 
@@ -32,9 +34,11 @@ export default function ClienteTransactions() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalAdiantamentos, setTotalAdiantamentos] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
  
   const navigate = useNavigate();
   const { id } = useParams();
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     const promise = axios.get(`${import.meta.env.VITE_URL}/clients/${id}`);
@@ -71,9 +75,13 @@ export default function ClienteTransactions() {
       setTotalPages(res.data.totalPages || 0);
       setTotalAdiantamentos(res.data.total || res.data.length || 0);
       setCurrentPage(res.data.currentPage || page);
-      setIsLoading(false);
+      
+      // Não mostrar notificação de sucesso para carregamento de dados
+      // Apenas mostrar notificações para ações do usuário
     }).catch(error => {
       console.error('Erro ao buscar adiantamentos paginados:', error);
+      enqueueSnackbar('Erro ao carregar adiantamentos', { variant: 'error' });
+    }).finally(() => {
       setIsLoading(false);
     });
   }
@@ -87,9 +95,11 @@ export default function ClienteTransactions() {
     event.preventDefault();
     
     if (!initialDate || !finalDate) {
-      alert('Por favor, selecione as datas inicial e final');
+      enqueueSnackbar('Por favor, selecione as datas inicial e final', { variant: 'warning' });
       return;
     }
+
+    setIsLoadingTransactions(true);
 
     const formatDate = (date) => {
       const day = String(date.getDate()).padStart(2, '0');
@@ -105,10 +115,26 @@ export default function ClienteTransactions() {
 
     promise.then(res => {
       setTransactions(res.data);
-    })
+      enqueueSnackbar('Transações carregadas com sucesso!', { variant: 'success' });
+    }).catch(error => {
+      enqueueSnackbar('Erro ao carregar transações', { variant: 'error' });
+    }).finally(() => {
+      setIsLoadingTransactions(false);
+    });
   }
 
   function renderTransactions() {
+    if (isLoadingTransactions) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+            Carregando transações...
+          </Typography>
+        </Box>
+      );
+    }
+
     if (!transactions || Object.keys(transactions).length === 0) {
       return (
         <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
@@ -249,9 +275,12 @@ export default function ClienteTransactions() {
   function renderAdiantamentos() {
     if (isLoading) {
       return (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-          Carregando adiantamentos...
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2 }}>
+          <CircularProgress size={20} />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+            Carregando adiantamentos...
+          </Typography>
+        </Box>
       );
     }
 

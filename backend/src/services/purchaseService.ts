@@ -262,10 +262,11 @@ async function getPurchaseInfo(id:number) {
     valorTotal: valorTotal // Adicionar o valorTotal calculado
   }
 
-  // Calcular valor restante: produtos - adiantamentos - pagamentos
+  // Calcular valor restante: produtos - pagamentos
+  // Os adiantamentos já estão incluídos nos pagamentos (forma "Débito Automático")
   const valorProdutos = data.produtos.reduce((sum, p) => sum + (p.price * p.quantity), 0);
   const totalPagamentos = data.valores.reduce((sum, valor) => sum + valor, 0);
-  const valorRestante = valorProdutos - (data.valorAdiantamentos || 0) - totalPagamentos;
+  const valorRestante = valorProdutos - totalPagamentos;
   
   // Determinar status baseado no valor restante
   data.wasPaid = valorRestante <= 0;
@@ -290,9 +291,10 @@ async function payment(data:PaymentRequest, id:number) {
     valorTotalProdutos += produto.price * produto.quantity;
   });
 
-  // Calcular valor restante: produtos - adiantamentos - pagamentos
+  // Calcular valor restante: produtos - pagamentos
+  // Os adiantamentos já estão incluídos nos pagamentos (forma "Débito Automático")
   const totalPagamentos = purchase.valor.reduce((sum, valor) => sum + valor, 0);
-  const valorRestante = valorTotalProdutos - (purchase.valorAdiantamentos || 0) - totalPagamentos;
+  const valorRestante = valorTotalProdutos - totalPagamentos;
   
   if(valorRestante <= 0) {
     purchase.wasPaid = true;

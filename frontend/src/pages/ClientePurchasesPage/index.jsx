@@ -21,7 +21,13 @@ import {
   InputLabel,
   Button,
   TextField,
-  Stack
+  Stack,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from "@mui/material";
 import { 
   Visibility as VisibilityIcon,
@@ -30,6 +36,7 @@ import {
   ArrowBack as ArrowBackIcon,
   CheckCircle as CheckCircleIcon
 } from "@mui/icons-material";
+import { useSnackbar } from 'notistack';
 
 export default function ClientePurchasesPage() {
   const [purchases, setPurchases] = useState([]);
@@ -44,13 +51,17 @@ export default function ClientePurchasesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [isLoading, setIsLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [purchaseToDelete, setPurchaseToDelete] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     fetchPurchases();
-  },[changeState, currentPage, itemsPerPage, initialDate, finalDate, statusFilter]);
+  }, [changeState, currentPage, itemsPerPage, initialDate, finalDate, statusFilter]);
 
   useEffect(() => {
     const promise = axios.get(`${import.meta.env.VITE_URL}/clients/${id}`);
@@ -66,6 +77,7 @@ export default function ClientePurchasesPage() {
   }, [initialDate, finalDate, statusFilter]);
 
   async function fetchPurchases() {
+    setIsLoading(true);
     try {
       // Determinar a URL base baseada no ambiente
       const baseURL = import.meta.env.VITE_URL || 
@@ -103,8 +115,14 @@ export default function ClientePurchasesPage() {
       setTotalPages(totalPagesData);
       setTotalItems(totalItemsData);
       setPurchase({});
+      
+      // Não mostrar notificação de sucesso para carregamento de dados
+      // Apenas mostrar notificações para ações do usuário
     } catch (error) {
       setPurchases([]);
+      enqueueSnackbar('Erro ao carregar compras', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -114,27 +132,42 @@ export default function ClientePurchasesPage() {
     setStatusFilter('all');
   }
 
-  async function removePurchaseRegister(purchaseId) {
+  function handleDeleteClick(purchase) {
+    setPurchaseToDelete(purchase);
+    setDeleteDialogOpen(true);
+  }
+
+  function handleDeleteCancel() {
+    setDeleteDialogOpen(false);
+    setPurchaseToDelete(null);
+  }
+
+  async function handleDeleteConfirm() {
+    if (!purchaseToDelete) return;
+    
     try {
-      await axios.delete(`${import.meta.env.VITE_URL}/purchases/${purchaseId}/delete`);
-      alert("Registro removido!");
+      await axios.delete(`${import.meta.env.VITE_URL}/purchases/${purchaseToDelete.id}/delete`);
+      enqueueSnackbar("Registro removido com sucesso!", { variant: 'success' });
       
       // Atualizar o estado local imediatamente
       setPurchases(prevPurchases => 
-        prevPurchases.filter(purchase => purchase.id !== purchaseId)
+        prevPurchases.filter(purchase => purchase.id !== purchaseToDelete.id)
       );
       
       // Também incrementar o changeState para garantir que os dados sejam recarregados
       setChangeState(prev => prev + 1);
     } catch (error) {
-      alert(error);
+      enqueueSnackbar("Erro ao remover registro", { variant: 'error' });
+    } finally {
+      setDeleteDialogOpen(false);
+      setPurchaseToDelete(null);
     }
   }
 
   async function markPurchaseAsCompleted(purchaseId) {
     try {
       await axios.put(`${import.meta.env.VITE_URL}/purchases/${purchaseId}/complete`);
-      alert("Compra marcada como concluída!");
+      enqueueSnackbar("Compra marcada como concluída!", { variant: 'success' });
       
       // Atualizar o estado local imediatamente
       setPurchases(prevPurchases => 
@@ -148,7 +181,7 @@ export default function ClientePurchasesPage() {
       // Também incrementar o changeState para garantir que os dados sejam recarregados
       setChangeState(prev => prev + 1);
     } catch (error) {
-      alert("Erro ao marcar compra como concluída!");
+      enqueueSnackbar("Erro ao marcar compra como concluída", { variant: 'error' });
     }
   }
 
@@ -290,7 +323,14 @@ export default function ClientePurchasesPage() {
       </Box>
       
       
-      {purchases && purchases.length > 0 && (
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+            Carregando compras...
+          </Typography>
+        </Box>
+      ) : purchases && purchases.length > 0 ? (
          <Box sx={{ width: '100%' }}>
            <Paper sx={{ boxShadow: 3 }}>
             <TableContainer>
@@ -367,15 +407,13 @@ export default function ClientePurchasesPage() {
                             </IconButton>
                           )}
                           
-                          {purchase.status !== "CONCLUIDO" && (
-                            <IconButton
-                              color="error"
-                              onClick={() => removePurchaseRegister(purchase.id)}
-                              title="Excluir compra"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          )}
+                          <IconButton
+                            color="error"
+                            onClick={() => handleDeleteClick(purchase)}
+                            title="Excluir compra"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -430,15 +468,52 @@ export default function ClientePurchasesPage() {
             </Box>
           </Paper>
         </Box>
-      )}
-      
-      {purchases && purchases.length === 0 && (
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary">
+      ) : (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body1" color="text.secondary">
             Nenhuma compra encontrada
           </Typography>
         </Box>
       )}
+      
+      {/* Modal de confirmação de exclusão */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirmar Exclusão
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Tem certeza que deseja excluir a compra <strong>#{purchaseToDelete?.id}</strong>?
+            <br />
+            <br />
+            <strong>Data:</strong> {purchaseToDelete ? new Date(purchaseToDelete.createdAt).toLocaleDateString('pt-br') : ''}
+            <br />
+            <strong>Valor:</strong> {purchaseToDelete ? calculatePurchaseValue(purchaseToDelete).toLocaleString('pt-br', {
+              style: 'currency',
+              currency: 'BRL'
+            }) : ''}
+            <br />
+            <strong>Status:</strong> {purchaseToDelete ? getStatus(purchaseToDelete) : ''}
+            <br />
+            <br />
+            Esta ação não pode ser desfeita.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Excluir
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
     </Container>
   )
 }

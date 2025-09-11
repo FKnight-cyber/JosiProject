@@ -4,6 +4,8 @@ import { IoCart } from 'react-icons/io5'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import UserContext from '../../context/UserContext'
 import axios from 'axios'
+import { CircularProgress, Box } from '@mui/material'
+import { useSnackbar } from 'notistack'
 
 export default function PurchaseRegister() {
   const [products, setProducts] = useState([])
@@ -15,23 +17,28 @@ export default function PurchaseRegister() {
   const [newQuantity, setNewQuantity] = useState(0);
   const [newPrice, setNewPrice] = useState(0);
   const [isProductInputAvailable, setIsProductInputAvailable] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   const { purchaseCart, setPurchaseCart }:any = useContext(UserContext);
 
   const navigate = useNavigate()
-
   const { id } = useParams()
+  const { enqueueSnackbar } = useSnackbar()
 
   async function addPurchase() {
     const body = purchaseCart
+    setIsLoading(true);
 
     try {
       await axios.post(`${import.meta.env.VITE_URL}/purchases/${id}/add`, body)
       setPurchaseCart([]);
+      enqueueSnackbar('Compra registrada com sucesso!', { variant: 'success' });
       navigate(-1)
-      alert('Compra registrada!')
     } catch (error) {
-      alert(error)
+      enqueueSnackbar('Erro ao registrar compra', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -41,6 +48,13 @@ export default function PurchaseRegister() {
     promise.then((res) => {
       setProducts(res.data);
       setIsProductInputAvailable(true);
+      
+      // Não mostrar notificação de sucesso para carregamento de dados
+      // Apenas mostrar notificações para ações do usuário
+    }).catch(error => {
+      enqueueSnackbar('Erro ao carregar produtos', { variant: 'error' });
+    }).finally(() => {
+      setIsLoadingProducts(false);
     })
   }, [])
 
@@ -65,8 +79,8 @@ export default function PurchaseRegister() {
 
   function renderProducts() {
     return products.map((product, index) => (
-      <Link style={{textDecoration: 'none', color: 'inherit'}} to={`/add/item/${product.id}`}>
-        <h1 className='product' key={index}>{product.nome}</h1>
+      <Link key={product.id} style={{textDecoration: 'none', color: 'inherit'}} to={`/add/item/${product.id}`}>
+        <h1 className='product'>{product.nome}</h1>
       </Link>
     ))
   }
@@ -95,7 +109,7 @@ export default function PurchaseRegister() {
   
   function renderList() {
     return purchaseCart.map((item, index) => (
-      <div key={index} className="item">
+      <div key={`${item.id}-${index}`} className="item">
         <div className='p1' onClick={() => {setUpdate(item.id);setEditedItem(item)}}>
           <h1>{index + 1}</h1>
           <h1>{item.name}</h1>
@@ -153,6 +167,7 @@ export default function PurchaseRegister() {
 
   async function findByName(event:any) {
     event.preventDefault()
+    setIsLoadingProducts(true);
 
     try {
       const { data: client } = await axios.get(
@@ -162,8 +177,11 @@ export default function PurchaseRegister() {
 
       arr.push(client)
       setProducts(arr[0])
+      enqueueSnackbar('Busca realizada com sucesso!', { variant: 'success' });
     } catch (error) {
-      alert(error)
+      enqueueSnackbar('Erro ao buscar produtos', { variant: 'error' });
+    } finally {
+      setIsLoadingProducts(false);
     }
   }
 
@@ -177,7 +195,16 @@ export default function PurchaseRegister() {
           <div className="confirmation">
           {renderList()}
           </div>
-          <button onClick={() => addPurchase()}>Finalizar pedido</button>
+          <button onClick={() => addPurchase()} disabled={isLoading}>
+            {isLoading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={16} />
+                <span>Finalizando...</span>
+              </Box>
+            ) : (
+              'Finalizar pedido'
+            )}
+          </button>
           <button className="cancel" onClick={() => setConfirm(false)}>Cancelar</button> 
         </>
         :
@@ -196,7 +223,14 @@ export default function PurchaseRegister() {
             />
           </form>
           <div className="opcoes">
-            {products.length > 0 ? renderProducts() : ''}
+            {isLoadingProducts ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                <CircularProgress />
+                <span style={{ marginLeft: '10px' }}>Carregando produtos...</span>
+              </Box>
+            ) : (
+              products.length > 0 ? renderProducts() : ''
+            )}
           </div>
           <button onClick={() => {orgazineItems();calculateTotal();setConfirm(true)}}>Confirmar Compra</button>
         </>
