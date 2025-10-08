@@ -47,7 +47,7 @@ export default function App(){
     return(
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <SnackbarProvider maxSnack={3}>
+            <SnackbarProvider maxSnack={3} autoHideDuration={2000}>
                 <BrowserRouter>
                     <GlobalStyle />
                     <UserContext.Provider value={userContext}>
