@@ -33,10 +33,14 @@ export default function PurchaseRegister() {
     try {
       await axios.post(`${import.meta.env.VITE_URL}/purchases/${id}/add`, body)
       setPurchaseCart([]);
-      enqueueSnackbar('Compra registrada com sucesso!', { variant: 'success' });
+      enqueueSnackbar('Compra registrada com sucesso!', { 
+        variant: 'success',
+        autoHideDuration: 2000 
+      });
       navigate(-1)
     } catch (error) {
-      enqueueSnackbar('Erro ao registrar compra', { variant: 'error' });
+      enqueueSnackbar('Erro ao registrar compra', { variant: 'error',
+        autoHideDuration: 2000  });
     } finally {
       setIsLoading(false);
     }
