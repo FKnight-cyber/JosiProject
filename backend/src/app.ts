@@ -10,10 +10,13 @@ const defaultOrigins = [
   "http://127.0.0.1:5173",
 ];
 
-const corsOrigins =
+/** CORS_ORIGINS no Railway soma a esta lista (não substitui), para não apagar o domínio do Vercel por engano. */
+const extraOrigins =
   process.env.CORS_ORIGINS?.split(",")
     .map((s) => s.trim())
-    .filter(Boolean) ?? defaultOrigins;
+    .filter(Boolean) ?? [];
+
+const corsOrigins = [...new Set([...defaultOrigins, ...extraOrigins])];
 
 function allowOrigin(origin: string | undefined): boolean {
   if (!origin) return true;
@@ -31,11 +34,15 @@ const app = express();
 
 app.use(
   cors({
+    // Reflete a origem permitida (necessário para o browser receber Access-Control-Allow-Origin correto)
     origin(origin, callback) {
-      callback(null, allowOrigin(origin));
+      if (allowOrigin(origin)) {
+        return callback(null, origin ?? true);
+      }
+      callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
   }),
 );
 app.use(json());
