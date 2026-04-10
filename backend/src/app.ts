@@ -46,6 +46,14 @@ app.use(
   }),
 );
 app.use(json());
+
+app.get("/", (_req, res) => {
+  res.status(200).json({ ok: true, service: "mycontrol-backend" });
+});
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true, uptime: process.uptime() });
+});
+
 app.use(mainRouter);
 app.use(errorHandler);
 

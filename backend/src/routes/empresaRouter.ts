@@ -3,6 +3,6 @@ import { getInfo } from "../controllers/empresaController";
 
 const empresaRouter = Router();
 
-empresaRouter.get('/info', getInfo);
+empresaRouter.get("/info", getInfo);
 
 export default empresaRouter;
