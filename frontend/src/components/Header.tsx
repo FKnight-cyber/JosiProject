@@ -29,6 +29,37 @@ const Container = styled.div`
   justify-content: space-around;
   align-items: center;
 
+  @media print {
+    height: auto;
+    min-height: unset;
+    padding: 10px 14px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+
+    img {
+      height: 72px;
+      width: 72px;
+    }
+
+    .left2 {
+      height: auto;
+    }
+
+    .right h2 {
+      margin-bottom: 4px;
+      font-size: 11pt;
+      line-height: 1.35;
+    }
+
+    .left2 h1 {
+      font-size: 14pt;
+    }
+
+    .left2 h2 {
+      font-size: 10pt;
+    }
+  }
+
   img {
     height: 80px;
     width: 80px;

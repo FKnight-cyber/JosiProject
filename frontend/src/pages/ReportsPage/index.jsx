@@ -1,15 +1,16 @@
 // @ts-ignore
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import { Container, Purchase } from "./style";
 import axios from "axios";
 import { 
   Tooltip, 
   IconButton, 
-  Box
+  Box,
+  Button,
 } from "@mui/material";
-import { Warning } from "@mui/icons-material";
+import { Warning, PictureAsPdf } from "@mui/icons-material";
 
 export default function ReportsPage() {
   const [info, setInfo] = useState();
@@ -21,6 +22,7 @@ export default function ReportsPage() {
   const [isPdfExport, setIsPdfExport] = useState(false);
 
   const { purchaseId } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Detectar se é uma exportação PDF
@@ -176,24 +178,22 @@ export default function ReportsPage() {
     return (
       <>
         {purchases.produtos.map((produto, index) =>
-           <Purchase key={index}>
+           <Purchase key={index} className="report-product-row">
               <div className="left">
-                <h5>{index + 1}</h5>
-                <h5>{produto.produto?.nome}</h5>
-                <h5 className="move">{produto.quantity} {produto.produto.medida}</h5>
-                <h5 className="move">{(produto.price).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
-                <h5 className="move">{(produto.price * produto?.quantity).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
+                <h5 className="cell-nome">{produto.produto?.nome}</h5>
+                <h5 className="move cell-qtd">{produto.quantity} {produto.produto.medida}</h5>
+                <h5 className="move cell-preco">{(produto.price).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
+                <h5 className="move cell-total">{(produto.price * produto?.quantity).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
               </div>
            </Purchase>
         )}
         {purchases.produtos.length > 0 && (
-          <Purchase className="total-row">
+          <Purchase className="total-row report-product-row">
             <div className="left">
-              <h5>Total:</h5>
-              <h5></h5>
-              <h5 className="move">{formatMeasures(totals.measures)}</h5>
-              <h5 className="move"></h5>
-              <h5 className="move">{totals.totalValue.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
+              <h5 className="cell-nome">Total:</h5>
+              <h5 className="move cell-qtd">{formatMeasures(totals.measures)}</h5>
+              <h5 className="move cell-preco"></h5>
+              <h5 className="move cell-total">{totals.totalValue.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
             </div>
           </Purchase>
         )}
@@ -205,11 +205,11 @@ export default function ReportsPage() {
     let result = [];
 
     for(let i = 0; i < purchases.valores.length;i++) {
-      result.push(<Purchase key={i}>
+      result.push(<Purchase key={i} className="report-payment-row">
       <div className="right">
-        <h5>{purchases.formas[i]}</h5>
-        <h5 className="detalhes">{purchases.detalhes[i]}</h5>
-        <h5>{purchases.valores[i].toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
+        <h5 className="cell-valor">{purchases.valores[i].toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h5>
+        <h5 className="cell-forma">{purchases.formas[i]}</h5>
+        <h5 className="detalhes cell-detalhes">{purchases.detalhes[i]}</h5>
       </div>
    </Purchase>)
     }
@@ -273,10 +273,11 @@ export default function ReportsPage() {
       }
     }
 
-    
-    // Logs adicionais para debug dos adiantamentos restantes
-    if (valorAdiantamento > 0) {
-      const adiantamentosRestantes = totalAdiantamentos - valorAdiantamento;
+    // Convenção de exibição: saldo negativo = ainda falta pagar; positivo = crédito /
+    // valor a favor do cliente após quitar a compra.
+    saldoFinal = -saldoFinal;
+    if (Math.abs(saldoFinal) < 0.005) {
+      saldoFinal = 0;
     }
 
     return [
@@ -284,6 +285,14 @@ export default function ReportsPage() {
       soma2.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}),
       saldoFinal.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})
     ];
+  }
+
+  function getSaldoToneClass() {
+    if (!purchases) return '';
+    const v = getValorRestante();
+    if (v < 0) return 'saldo-tone-negativo';
+    if (v > 0) return 'saldo-tone-positivo';
+    return 'saldo-tone-zero';
   }
 
   function getValorRestante() {
@@ -307,38 +316,31 @@ export default function ReportsPage() {
     // Verificar se há adiantamentos pendentes
     const totalAdiantamentos = calcularTotalAdiantamentosAteDataCompra();
     
-    // Lógica corrigida para o cálculo do saldo final
+    // Mesma convenção que calculateTotal()[2]: negativo = falta pagar.
+    let saldoRaw;
     if (valorAdiantamento > 0) {
-      // Se há adiantamentos aplicados nesta compra
-      // Os adiantamentos aplicados já estão incluídos nos pagamentos (soma2)
-      // Mas precisamos considerar os adiantamentos pendentes restantes
       const adiantamentosRestantes = totalAdiantamentos - valorAdiantamento;
-      
+
       if (adiantamentosRestantes > 0) {
-        // Se ainda há adiantamentos pendentes após a aplicação
-        return soma - soma2 - adiantamentosRestantes;
+        saldoRaw = soma - soma2 - adiantamentosRestantes;
       } else {
-        // Se não há adiantamentos pendentes restantes
-        return soma - soma2;
+        saldoRaw = soma - soma2;
       }
     } else {
-      // Se não há adiantamentos aplicados nesta compra
       if (totalAdiantamentos === 0) {
-        // Se não há adiantamentos pendentes: valor dos produtos - pagamentos
-        return soma - soma2;
+        saldoRaw = soma - soma2;
       } else {
-        // Se há adiantamentos pendentes, verificar se foram criados por excesso de pagamento
         const valorExcedente = Math.max(0, soma2 - soma);
-        
+
         if (valorExcedente > 0 && totalAdiantamentos === valorExcedente) {
-          // Se os adiantamentos foram criados por excesso de pagamento, não contar duas vezes
-          return soma - soma2;
+          saldoRaw = soma - soma2;
         } else {
-          // Se há adiantamentos pré-existentes: valor dos produtos - (adiantamentos + pagamentos)
-          return soma - (totalAdiantamentos + soma2);
+          saldoRaw = soma - (totalAdiantamentos + soma2);
         }
       }
     }
+    const out = -saldoRaw;
+    return Math.abs(out) < 0.005 ? 0 : out;
   }
 
   function renderAdiantamentoAlert() {
@@ -395,9 +397,57 @@ export default function ReportsPage() {
     return null;
   }
 
+  function handleExportPdf() {
+    window.print();
+  }
+
   return(
     <>
-      <Container>
+      <Container className="report-print">
+        <Button
+          className="hide-on-pdf"
+          variant="contained"
+          color="success"
+          onClick={() => navigate(-1)}
+          aria-label="Voltar para a página anterior"
+          sx={{
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 1300,
+            color: '#fff',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 2.5,
+            py: 1,
+            boxShadow: 2,
+            '&:hover': {
+              boxShadow: 4,
+            },
+          }}
+        >
+          Voltar
+        </Button>
+        <IconButton
+          className="hide-on-pdf"
+          onClick={handleExportPdf}
+          aria-label="Exportar relatório como PDF"
+          sx={{
+            position: 'fixed',
+            top: 16,
+            right: 24,
+            zIndex: 1300,
+            backgroundColor: 'primary.main',
+            color: '#fff',
+            boxShadow: 2,
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+              boxShadow: 4,
+            },
+          }}
+        >
+          <PictureAsPdf />
+        </IconButton>
         {info ? Header(info) : ""}
         <div className="organize">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -406,12 +456,13 @@ export default function ReportsPage() {
           </Box>
         </div>
         <div className="line"></div>
-        <div className="organize">
-          <h3>
+        <div className="organize report-meta">
+          <h3 className="report-meta-supplier">
             Fornecedor: {purchases ? purchases.fornecedor : ''}
           </h3>
-          <h3>
-            Data da compra: {purchases ? (new Date(purchases.data)).toLocaleDateString('pt-br') : ''}
+          <h3 className="report-meta-date">
+            Data da compra:{' '}
+            {purchases ? (new Date(purchases.data)).toLocaleDateString('pt-br') : ''}
           </h3>
         </div>
         <div className="line"></div>
@@ -421,11 +472,10 @@ export default function ReportsPage() {
           </h4>
         </div>
         <div className="line"></div>
-        <div className="info">
-          <h4>Enumeração</h4>
-          <h4>Descrição do Produto</h4>
-          <h4>Quantidade</h4>
-          <h4>Preço Unitário</h4>
+        <div className="info report-products-head">
+          <h4>Nome</h4>
+          <h4>qtd</h4>
+          <h4>P. unit.</h4>
           <h4>Total</h4>
         </div>
         {
@@ -438,10 +488,10 @@ export default function ReportsPage() {
           </h4>
         </div>
         <div className="line"></div>
-        <div className="info sub">
+        <div className="info report-payments-head">
+          <h4>Valor</h4>
           <h4>Forma</h4>
           <h4>Detalhes</h4>
-          <h4>Valor pago</h4>
         </div>
         {
           purchases ? renderInfo() : ""
@@ -449,17 +499,33 @@ export default function ReportsPage() {
         <div className="line"></div>
         <div className="footer">
           
-          <h4>Valor total dos produtos: {purchases ? calculateTotal()[0] : ""}</h4>
+          <h4 className="footer-summary footer-line">
+            <span className="footer-label">Valor total dos produtos:</span>
+            <span className="footer-value">{purchases ? calculateTotal()[0] : ''}</span>
+          </h4>
           <div className="linefooter"></div>
           {calcularTotalAdiantamentosAteDataCompra() !== 0 && (
             <>
-              <h4>Adiantamentos pendentes: {calcularTotalAdiantamentosAteDataCompra().toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</h4>
+              <h4 className="footer-summary footer-line">
+                <span className="footer-label">Adiantamentos pendentes:</span>
+                <span className="footer-value">{calcularTotalAdiantamentosAteDataCompra().toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</span>
+              </h4>
               <div className="linefooter"></div>
             </>
           )}
-          <h4>Quantia paga: {purchases ? calculateTotal()[1] : ""}</h4>
+          <h4 className="footer-summary footer-line">
+            <span className="footer-label">Quantia paga:</span>
+            <span className="footer-value">{purchases ? calculateTotal()[1] : ''}</span>
+          </h4>
           <div className="linefooter"></div>
-          <h4>Saldo final: {purchases ? calculateTotal()[2] : ""}</h4>
+          <h4 className="saldo-final-row footer-line">
+            <strong>Saldo final:</strong>
+            <span
+              className={['saldo-final-valor', getSaldoToneClass()].filter(Boolean).join(' ')}
+            >
+              {purchases ? calculateTotal()[2] : ''}
+            </span>
+          </h4>
           <div className="linefooter"></div>
         </div>
       </Container>
