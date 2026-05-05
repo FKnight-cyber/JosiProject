@@ -198,18 +198,6 @@ export const Container = styled.div`
     margin-left: auto;
   }
 
-  .saldo-final-valor.saldo-tone-negativo {
-    color: #c62828;
-  }
-
-  .saldo-final-valor.saldo-tone-positivo {
-    color: #2e7d32;
-  }
-
-  .saldo-final-valor.saldo-tone-zero {
-    color: inherit;
-  }
-
   .footer-line {
     display: flex;
     justify-content: space-between;
@@ -238,6 +226,10 @@ export const Container = styled.div`
     font-weight: 400;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+
+  .saldo-final-valor.saldo-final-valor--negativo {
+    color: #c62828;
   }
 
   .organize {
@@ -502,14 +494,8 @@ export const Container = styled.div`
       width: min(100%, 420px);
     }
 
-    .saldo-final-valor.saldo-tone-negativo {
+    .saldo-final-valor.saldo-final-valor--negativo {
       color: #b71c1c !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    .saldo-final-valor.saldo-tone-positivo {
-      color: #1b5e20 !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }

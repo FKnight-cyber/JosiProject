@@ -18,7 +18,6 @@ export default function ReportsPage() {
   const [adiantamentos, setAdiantamentos] = useState();
   const [adiantamentosAteDataCompra, setAdiantamentosAteDataCompra] = useState();
   const [cliente, setCliente] = useState();
-  const [valorAdiantamento, setValorAdiantamento] = useState(0);
   const [isPdfExport, setIsPdfExport] = useState(false);
 
   const { purchaseId } = useParams();
@@ -55,12 +54,6 @@ export default function ReportsPage() {
 
     promise.then(res => {
       setPurchases(res.data);
-      
-      if (res.data && res.data.valorAdiantamentos !== undefined && res.data.valorAdiantamentos !== null) {
-        setValorAdiantamento(res.data.valorAdiantamentos);
-      } else {
-        setValorAdiantamento(0);
-      }
       
       // Buscar dados do cliente
       let clientId = null;
@@ -216,131 +209,46 @@ export default function ReportsPage() {
     return result;
   }
 
-  function calculateTotal() {
-    if (!purchases) return ["R$ 0,00", "R$ 0,00", "R$ 0,00"];
+  function getPurchaseTotals() {
+    if (!purchases || !purchases.produtos) {
+      return { soma: 0, soma2: 0, saldo: 0 };
+    }
 
     let soma = 0;
     let soma2 = 0;
 
-    if(purchases.valores.length === 0) {
+    if (purchases.valores.length === 0) {
       soma2 = 0;
-    }else {
-      purchases.valores.map(value => {
+    } else {
+      purchases.valores.forEach(value => {
         soma2 += value;
-      })
+      });
     }
 
-    purchases.produtos.map(e => {
+    purchases.produtos.forEach(e => {
       soma += e.price * e.quantity;
     });
 
-    // Verificar se há adiantamentos pendentes
-    const totalAdiantamentos = calcularTotalAdiantamentosAteDataCompra();
-    
-    // Lógica corrigida para o cálculo do saldo final
-    let saldoFinal;
-    
-    // Se há adiantamentos aplicados nesta compra (valorAdiantamento > 0)
-    if (valorAdiantamento > 0) {
-      // Os adiantamentos aplicados já estão incluídos nos pagamentos (soma2)
-      // Mas precisamos considerar os adiantamentos pendentes restantes
-      const adiantamentosRestantes = totalAdiantamentos - valorAdiantamento;
-      
-      if (adiantamentosRestantes > 0) {
-        // Se ainda há adiantamentos pendentes após a aplicação
-        // Saldo = valor dos produtos - pagamentos - adiantamentos restantes
-        saldoFinal = soma - soma2 - adiantamentosRestantes;
-      } else {
-        // Se não há adiantamentos pendentes restantes
-        saldoFinal = soma - soma2;
-      }
-    } else {
-      // Se não há adiantamentos aplicados nesta compra
-      if (totalAdiantamentos === 0) {
-        // Se não há adiantamentos pendentes: valor dos produtos - pagamentos
-        saldoFinal = soma - soma2;
-      } else {
-        // Se há adiantamentos pendentes, verificar se foram criados por excesso de pagamento
-        const valorExcedente = Math.max(0, soma2 - soma);
-        
-        if (valorExcedente > 0 && totalAdiantamentos === valorExcedente) {
-          // Se os adiantamentos foram criados por excesso de pagamento, não contar duas vezes
-          saldoFinal = soma - soma2;
-        } else {
-          // Se há adiantamentos pré-existentes: valor dos produtos - (adiantamentos + pagamentos)
-          saldoFinal = soma - (totalAdiantamentos + soma2);
-        }
-      }
+    // Valor restante = produtos − pagamentos (igual ao cálculo de status no backend).
+    // Positivo = falta pagar; negativo = crédito a favor do cliente.
+    let saldo = soma - soma2;
+    if (Math.abs(saldo) < 0.005) {
+      saldo = 0;
     }
 
-    // Convenção de exibição: saldo negativo = ainda falta pagar; positivo = crédito /
-    // valor a favor do cliente após quitar a compra.
-    saldoFinal = -saldoFinal;
-    if (Math.abs(saldoFinal) < 0.005) {
-      saldoFinal = 0;
-    }
+    return { soma, soma2, saldo };
+  }
+
+  function calculateTotal() {
+    if (!purchases) return ["R$ 0,00", "R$ 0,00", "R$ 0,00"];
+
+    const { soma, soma2, saldo } = getPurchaseTotals();
 
     return [
       soma.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}),
       soma2.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}),
-      saldoFinal.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})
+      saldo.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})
     ];
-  }
-
-  function getSaldoToneClass() {
-    if (!purchases) return '';
-    const v = getValorRestante();
-    if (v < 0) return 'saldo-tone-negativo';
-    if (v > 0) return 'saldo-tone-positivo';
-    return 'saldo-tone-zero';
-  }
-
-  function getValorRestante() {
-    if (!purchases) return 0;
-    
-    let soma = 0;
-    let soma2 = 0;
-
-    if(purchases.valores.length === 0) {
-      soma2 = 0;
-    }else {
-      purchases.valores.map(value => {
-        soma2 += value;
-      })
-    }
-
-    purchases.produtos.map(e => {
-      soma += e.price * e.quantity;
-    });
-
-    // Verificar se há adiantamentos pendentes
-    const totalAdiantamentos = calcularTotalAdiantamentosAteDataCompra();
-    
-    // Mesma convenção que calculateTotal()[2]: negativo = falta pagar.
-    let saldoRaw;
-    if (valorAdiantamento > 0) {
-      const adiantamentosRestantes = totalAdiantamentos - valorAdiantamento;
-
-      if (adiantamentosRestantes > 0) {
-        saldoRaw = soma - soma2 - adiantamentosRestantes;
-      } else {
-        saldoRaw = soma - soma2;
-      }
-    } else {
-      if (totalAdiantamentos === 0) {
-        saldoRaw = soma - soma2;
-      } else {
-        const valorExcedente = Math.max(0, soma2 - soma);
-
-        if (valorExcedente > 0 && totalAdiantamentos === valorExcedente) {
-          saldoRaw = soma - soma2;
-        } else {
-          saldoRaw = soma - (totalAdiantamentos + soma2);
-        }
-      }
-    }
-    const out = -saldoRaw;
-    return Math.abs(out) < 0.005 ? 0 : out;
   }
 
   function renderAdiantamentoAlert() {
@@ -521,7 +429,11 @@ export default function ReportsPage() {
           <h4 className="saldo-final-row footer-line">
             <strong>Saldo final:</strong>
             <span
-              className={['saldo-final-valor', getSaldoToneClass()].filter(Boolean).join(' ')}
+              className={
+                purchases && getPurchaseTotals().saldo < 0
+                  ? 'saldo-final-valor saldo-final-valor--negativo'
+                  : 'saldo-final-valor'
+              }
             >
               {purchases ? calculateTotal()[2] : ''}
             </span>
