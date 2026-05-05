@@ -15,7 +15,8 @@ import { Warning, PictureAsPdf } from "@mui/icons-material";
 export default function ReportsPage() {
   const [info, setInfo] = useState();
   const [purchases, setPurchases] = useState();
-  const [adiantamentos, setAdiantamentos] = useState();
+  /** Lista completa de lançamentos (GET /all); null = ainda não carregado */
+  const [adiantamentos, setAdiantamentos] = useState(null);
   const [adiantamentosAteDataCompra, setAdiantamentosAteDataCompra] = useState();
   const [cliente, setCliente] = useState();
   const [isPdfExport, setIsPdfExport] = useState(false);
@@ -82,6 +83,8 @@ export default function ReportsPage() {
           if (res.data && res.data.data) {
             buscarAdiantamentosAteDataCompra(parseInt(clientIdFromUrl), res.data.data);
           }
+        } else {
+          setAdiantamentos([]);
         }
       }
     });
@@ -96,11 +99,21 @@ export default function ReportsPage() {
 
   async function buscarAdiantamentos(clientId) {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_URL}/advances/client/${clientId}`);
-      setAdiantamentos(response.data);
+      const response = await axios.get(`${import.meta.env.VITE_URL}/advances/client/${clientId}/all`);
+      const raw = response.data;
+      setAdiantamentos(Array.isArray(raw) ? raw : []);
     } catch (error) {
       setAdiantamentos([]);
     }
+  }
+
+  /** Saldo líquido atual de adiantamentos (positivo = cliente deve à empresa). */
+  function calcularTotalAdiantamentosAtual() {
+    if (!adiantamentos || adiantamentos.length === 0) return 0;
+    return adiantamentos.reduce((total, adiantamento) => {
+      const n = Number(adiantamento.valor);
+      return total + (Number.isFinite(n) ? n : 0);
+    }, 0);
   }
 
   async function buscarAdiantamentosAteDataCompra(clientId, dataCompra) {
@@ -211,7 +224,7 @@ export default function ReportsPage() {
 
   function getPurchaseTotals() {
     if (!purchases || !purchases.produtos) {
-      return { soma: 0, soma2: 0, saldo: 0 };
+      return { soma: 0, soma2: 0, saldo: 0, saldoFinal: 0 };
     }
 
     let soma = 0;
@@ -229,25 +242,40 @@ export default function ReportsPage() {
       soma += e.price * e.quantity;
     });
 
-    // Valor restante = produtos − pagamentos (igual ao cálculo de status no backend).
-    // Positivo = falta pagar; negativo = crédito a favor do cliente.
+    // Saldo da compra = produtos − pagamentos (igual ao status no backend).
+    // Positivo = falta pagar na compra; negativo = crédito na compra.
     let saldo = soma - soma2;
     if (Math.abs(saldo) < 0.005) {
       saldo = 0;
     }
 
-    return { soma, soma2, saldo };
+    // Saldo final inclui o saldo líquido de adiantamentos do cliente (após carregar /all).
+    let saldoFinal = saldo;
+    if (adiantamentos !== null) {
+      const netAdv = calcularTotalAdiantamentosAtual();
+      saldoFinal = saldo - netAdv;
+      if (Math.abs(saldoFinal) < 0.005) {
+        saldoFinal = 0;
+      }
+    }
+
+    return { soma, soma2, saldo, saldoFinal };
   }
 
   function calculateTotal() {
     if (!purchases) return ["R$ 0,00", "R$ 0,00", "R$ 0,00"];
 
-    const { soma, soma2, saldo } = getPurchaseTotals();
+    const { soma, soma2, saldoFinal } = getPurchaseTotals();
+
+    const saldoFinalFmt =
+      adiantamentos !== null
+        ? saldoFinal.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })
+        : '–';
 
     return [
       soma.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}),
       soma2.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}),
-      saldo.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})
+      saldoFinalFmt
     ];
   }
 
@@ -436,7 +464,9 @@ export default function ReportsPage() {
             <strong>Saldo final:</strong>
             <span
               className={
-                purchases && getPurchaseTotals().saldo < 0
+                purchases &&
+                adiantamentos !== null &&
+                getPurchaseTotals().saldoFinal < 0
                   ? 'saldo-final-valor saldo-final-valor--negativo'
                   : 'saldo-final-valor'
               }
