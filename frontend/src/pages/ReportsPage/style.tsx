@@ -218,12 +218,16 @@ export const Container = styled.div`
     white-space: nowrap;
   }
 
+  .footer-value.footer-value--adiantamentos-pendentes {
+    color: #c62828;
+  }
+
   .saldo-final-row.footer-line strong {
     flex: 0 1 auto;
   }
 
   .saldo-final-row .saldo-final-valor {
-    font-weight: 400;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -293,7 +297,7 @@ export const Container = styled.div`
       }
 
       .saldo-final-valor {
-        font-weight: 400;
+        font-weight: 700;
       }
     }
   }
@@ -492,6 +496,12 @@ export const Container = styled.div`
 
     .report-print .linefooter {
       width: min(100%, 420px);
+    }
+
+    .report-print .footer-value.footer-value--adiantamentos-pendentes {
+      color: #b71c1c !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
     .saldo-final-valor.saldo-final-valor--negativo {

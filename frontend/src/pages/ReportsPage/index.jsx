@@ -416,7 +416,13 @@ export default function ReportsPage() {
             <>
               <h4 className="footer-summary footer-line">
                 <span className="footer-label">Adiantamentos pendentes:</span>
-                <span className="footer-value">{calcularTotalAdiantamentosAteDataCompra().toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</span>
+                <span className="footer-value footer-value--adiantamentos-pendentes">
+                  {'- '}
+                  {Math.abs(calcularTotalAdiantamentosAteDataCompra()).toLocaleString('pt-br', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </span>
               </h4>
               <div className="linefooter"></div>
             </>
