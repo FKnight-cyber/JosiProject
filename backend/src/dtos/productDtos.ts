@@ -1,3 +1,4 @@
 import { Produto } from '@prisma/client';
 
-export type ProductCreationDTO = Omit<Produto, "id">;
+/** Criação: `active` vem do default do banco (true) */
+export type ProductCreationDTO = Omit<Produto, 'id' | 'active'>;

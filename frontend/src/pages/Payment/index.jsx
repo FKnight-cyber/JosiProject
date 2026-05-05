@@ -6,10 +6,31 @@ import axios from 'axios';
 import { CircularProgress, Box } from '@mui/material';
 import { useSnackbar } from 'notistack';
 
+/** Centavos consistentes — evita sobras tipo 0,01 / 1,00 por float e alinha totais ao backend */
+function roundBRL(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return 0;
+  return Math.round(x * 100) / 100;
+}
+
+/**
+ * Interpreta valor digitado (aceita "10,50", "1.234,56"; Number("10,50") é NaN sem isso).
+ */
+function parseMoneyInput(raw) {
+  if (raw === '' || raw == null) return 0;
+  let s = String(raw).trim();
+  if (s === '') return 0;
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  }
+  const n = parseFloat(s);
+  return roundBRL(Number.isFinite(n) ? n : 0);
+}
+
 export default function Payment() {
   const [forma, setForma] = useState('');
   const [detalhe, setDetalhe] = useState('');
-  const [valor, setValor] = useState(0);
+  const [valor, setValor] = useState('');
   const [purchases, setPurchases] = useState();
   const [adiantamentoCriado, setAdiantamentoCriado] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,81 +40,76 @@ export default function Payment() {
   const { purchaseId } = useParams();
   const { enqueueSnackbar } = useSnackbar();
 
+  /** Saldo em aberto (pode ser negativo se houver crédito/overpay teórico antes do último pagamento) */
+  function getRemainingBRL() {
+    if (!purchases) return 0;
+
+    const produtos = purchases.produtos || [];
+    const valores = purchases.valores || [];
+
+    const produtosTotal = roundBRL(
+      purchases.valorTotal != null && purchases.valorTotal !== undefined
+        ? purchases.valorTotal
+        : produtos.reduce((s, p) => s + Number(p.price) * Number(p.quantity), 0)
+    );
+
+    const totalPagamentos = roundBRL(valores.reduce((sum, v) => sum + Number(v), 0));
+
+    return roundBRL(produtosTotal - totalPagamentos);
+  }
+
+  /** Valor que ainda falta pagar (nunca negativo na UI principal) */
+  function calculateTotal() {
+    if (!purchases) return '';
+    const owed = Math.max(0, getRemainingBRL());
+    return owed.toFixed(2);
+  }
+
+  function calculateRemainingAfterPayment(paymentValue) {
+    const pay = parseMoneyInput(paymentValue);
+    const currentRemaining = getRemainingBRL();
+    const remainingAfterPayment = roundBRL(currentRemaining - pay);
+    return Math.max(0, remainingAfterPayment).toFixed(2);
+  }
+
   useEffect(() => {
     const promise = axios.get(`${import.meta.env.VITE_URL}/clients/purchases/${purchaseId}`);
 
     promise.then(res => {
       setPurchases(res.data);
-      
-      // Não mostrar notificação de sucesso para carregamento de dados
-      // Apenas mostrar notificações para ações do usuário
     }).catch(error => {
       enqueueSnackbar('Erro ao carregar dados da compra', { variant: 'error' });
     }).finally(() => {
       setIsLoadingPurchase(false);
     });
-  },[]);
-
-  function calculateTotalReal() {
-    let soma = 0;
-    let soma2 = 0;
-
-    if(purchases.valores.length === 0) {
-      soma2 = 0;
-    }else {
-      purchases.valores.map(value => {
-        soma2 += value;
-      })
-    }
-
-    purchases.produtos.map(e => {
-      soma += e.price * e.quantity;
-    });
-
-    // Calcular valor restante: produtos - pagamentos
-    // Os adiantamentos já estão incluídos nos pagamentos (forma "Débito Automático")
-    const valorRestante = soma - soma2;
-
-    return valorRestante.toFixed(2);
-  }
-
-  function calculateTotal() {
-    // Retornar o valor absoluto para exibição
-    return Math.abs(parseFloat(calculateTotalReal())).toFixed(2);
-  }
-
-  function calculateRemainingAfterPayment(paymentValue) {
-    const currentRemaining = parseFloat(calculateTotalReal());
-    const remainingAfterPayment = currentRemaining - parseFloat(paymentValue);
-    
-    // Se o resultado for negativo, significa que será criado um adiantamento
-    // Se for positivo, é o valor que ainda falta pagar
-    return Math.max(0, remainingAfterPayment).toFixed(2);
-  }
+  }, [purchaseId]);
 
   async function pay(event) {
     event.preventDefault();
     setIsLoading(true);
 
+    const valorNumerico = parseMoneyInput(valor);
+
     const body = {
       forma,
       detalhe,
-      valor
-    }
+      valor: valorNumerico
+    };
 
     try {
-      const response = await axios.put(`${import.meta.env.VITE_URL}/purchases/${purchaseId}/update`, body);
-      
-      // Verificar se um adiantamento foi criado
-      const valorRestanteAtual = parseFloat(calculateTotalReal()) - parseFloat(valor);
+      await axios.put(`${import.meta.env.VITE_URL}/purchases/${purchaseId}/update`, body);
+
+      const remainingBefore = getRemainingBRL();
+      const valorRestanteAtual = roundBRL(remainingBefore - valorNumerico);
+
       if (valorRestanteAtual < 0) {
-        const valorAdiantamento = Math.abs(valorRestanteAtual);
+        const valorAdiantamento = roundBRL(Math.abs(valorRestanteAtual));
         setAdiantamentoCriado(valorAdiantamento);
         enqueueSnackbar(`Pagamento registrado! Um adiantamento de R$ ${valorAdiantamento.toFixed(2)} foi criado automaticamente para o cliente.`, { variant: 'success' });
       } else {
         enqueueSnackbar("Pagamento registrado com sucesso!", { variant: 'success' });
       }
-      
+
       navigate(-1);
     } catch (error) {
       enqueueSnackbar("Falha ao registrar pagamento!", { variant: 'error' });
@@ -101,6 +117,11 @@ export default function Payment() {
       setIsLoading(false);
     }
   }
+
+  const valorPago = parseMoneyInput(valor);
+  const restanteConta = purchases ? getRemainingBRL() : 0;
+  const totalExibido = purchases ? parseFloat(calculateTotal()) : 0;
+  const mostrarPreviewPagamento = purchases && valorPago > 0;
 
   return(
     <Container>
@@ -124,8 +145,7 @@ export default function Payment() {
           
           <h1>Valor desta conta: R$ {purchases ? calculateTotal() : ""}</h1>
       
-          {/* Mensagem informativa sobre adiantamento */}
-          {purchases && valor > 0 && (
+          {mostrarPreviewPagamento && (
             <div style={{ 
               margin: '10px 0', 
               padding: '10px', 
@@ -133,11 +153,11 @@ export default function Payment() {
               borderRadius: '5px',
               border: '1px solid #2196f3'
             }}>
-              {parseFloat(valor) > parseFloat(calculateTotal()) ? (
+              {valorPago > totalExibido ? (
                 <p style={{ margin: 0, color: '#1976d2' }}>
-                  <strong>Informação:</strong> Como o valor do pagamento (R$ {parseFloat(valor).toFixed(2)}) 
+                  <strong>Informação:</strong> Como o valor do pagamento (R$ {valorPago.toFixed(2)}) 
                   é maior que o valor da conta (R$ {calculateTotal()}), um adiantamento de 
-                  R$ {(parseFloat(valor) - parseFloat(calculateTotal())).toFixed(2)} será criado automaticamente para o cliente.
+                  R$ {roundBRL(valorPago - restanteConta).toFixed(2)} será criado automaticamente para o cliente.
                 </p>
               ) : (
                 <p style={{ margin: 0, color: '#1976d2' }}>
@@ -158,9 +178,11 @@ export default function Payment() {
               placeholder="Detalhes da transação"
               onChange={e => setDetalhe(e.target.value)}
             />
-            <input type="number"
+            <input
+              type="text"
+              inputMode="decimal"
               value={valor}
-              placeholder="Quantia"
+              placeholder="Quantia (ex: 10,50)"
               onChange={e => setValor(e.target.value)}
             />
             <button type="submit" disabled={isLoading}>

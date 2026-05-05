@@ -9,7 +9,7 @@ export default function Produtos(props, setChangeState, changeState) {
     try {
       await axios.delete(`${import.meta.env.VITE_URL}/products/${id}/delete`);
       setChangeState(changeState + 1);
-      alert("Removido com sucesso!");
+      alert("Produto desativado. Ele não aparecerá mais na listagem.");
     } catch (error) {
       alert(error);
     }
@@ -19,6 +19,7 @@ export default function Produtos(props, setChangeState, changeState) {
       props.map((produto, index) => 
       <Container key={index}>
         <h1>Nome: {produto.nome} ({produto.medida})</h1>
+        <p className="active-flag">Ativo: {produto.active === false ? "Não" : "Sim"}</p>
         <div className="options">
           <Link to={`/products/update/${produto.id}`}>
             <IoBrush color="purple" size={20} cursor="pointer" />
@@ -45,6 +46,12 @@ export const Container = styled.div`
     margin: 6px;
     font-size: 16px;
     word-wrap: break-word;
+  }
+
+  .active-flag {
+    margin: 2px 6px 0;
+    font-size: 12px;
+    color: #2e7d32;
   }
 
   .options {

@@ -7,21 +7,27 @@ async function insert(data:ProductCreationDTO) {
 };
 
 async function getProducts() {
-  return await prisma.produto.findMany({orderBy:{nome:"asc"}});
+  return await prisma.produto.findMany({
+    where: { active: true },
+    orderBy: { nome: "asc" },
+  });
 };
 
 async function getByName(name: string) {
-  return await prisma.produto.findFirst({where:{nome:name}});
+  return await prisma.produto.findFirst({
+    where: { nome: name, active: true },
+  });
 };
 
 async function filterByName(name: string) {
   return await prisma.produto.findMany({
     where: {
+      active: true,
       nome: {
         startsWith: name,
-        mode: "insensitive"
-      }
-    }
+        mode: "insensitive",
+      },
+    },
   });
 };
 
@@ -30,16 +36,20 @@ async function getById(id: number) {
 };
 
 async function deleteProduct(id: number) {
-  await prisma.produto.delete({where:{id}});
+  await prisma.produto.update({
+    where: { id },
+    data: { active: false },
+  });
 }
 
-async function updateProduct(data:Produto) {
-  data.id = Number(data.id);
+async function updateProduct(data: Produto) {
+  const id = Number(data.id);
   await prisma.produto.update({
-    where:{
-      id:data.id
+    where: { id },
+    data: {
+      nome: data.nome,
+      medida: data.medida,
     },
-    data
   });
 }
 

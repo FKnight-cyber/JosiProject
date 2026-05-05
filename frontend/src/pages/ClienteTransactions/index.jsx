@@ -33,6 +33,8 @@ export default function ClienteTransactions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalAdiantamentos, setTotalAdiantamentos] = useState(0);
+  /** null = ainda carregando; 'error' = falha ao buscar /all (evita exibir R$ 0,00 enganoso) */
+  const [allAdiantamentosStatus, setAllAdiantamentosStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
  
@@ -50,18 +52,32 @@ export default function ClienteTransactions() {
     fetchAllAdiantamentos();
     
     fetchAdiantamentos(1);
-  },[])
+  }, [id]);
+
+  function parseValorAdiantamento(valor) {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
+  }
 
   function fetchAllAdiantamentos() {
     const url = `${import.meta.env.VITE_URL}/advances/client/${id}/all`;
-    
-    const promise = axios.get(url);
+    setAllAdiantamentosStatus('loading');
 
-    promise.then(res => {
-      setAllAdiantamentos(res.data);
-    }).catch(error => {
-      console.error('Erro ao buscar todos os adiantamentos:', error);
-    });
+    axios
+      .get(url)
+      .then((res) => {
+        const raw = res.data;
+        const lista = Array.isArray(raw) ? raw : Array.isArray(raw?.adiantamentos) ? raw.adiantamentos : [];
+        setAllAdiantamentos(lista);
+        setAllAdiantamentosStatus('ok');
+      })
+      .catch((error) => {
+        console.error('Erro ao buscar todos os adiantamentos:', error);
+        setAllAdiantamentosStatus('error');
+        enqueueSnackbar('Não foi possível calcular o total de adiantamentos. Tente atualizar a página.', {
+          variant: 'warning',
+        });
+      });
   }
 
   function fetchAdiantamentos(page) {
@@ -294,13 +310,21 @@ export default function ClienteTransactions() {
 
     return (
       <>
-        {adiantamentos.map((adiantamento) => (
+        {adiantamentos.map((adiantamento) => {
+          const valorNum = parseValorAdiantamento(adiantamento.valor);
+          const isDeducao = valorNum < 0;
+
+          return (
           <Card key={adiantamento.id} sx={{ mb: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="h6" component="div">
-                    R$ {adiantamento.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  <Typography
+                    variant="h6"
+                    component="div"
+                    sx={{ color: isDeducao ? 'error.main' : 'text.primary' }}
+                  >
+                    R$ {valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {new Date(adiantamento.dataAdiantamento).toLocaleDateString('pt-BR')}
@@ -313,14 +337,15 @@ export default function ClienteTransactions() {
                 </Box>
                 <Chip 
                   icon={<AttachMoney />} 
-                  label="Adiantamento" 
-                  color="primary" 
+                  label={isDeducao ? 'Dedução' : 'Adiantamento'} 
+                  color={isDeducao ? 'error' : 'primary'} 
                   size="small"
                 />
               </Box>
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
         
         {/* Paginação dos adiantamentos */}
         {totalPages > 1 && (
@@ -345,9 +370,14 @@ export default function ClienteTransactions() {
   }
 
   function calcularTotalAdiantamentos() {
-    if (!allAdiantamentos) return 0;
-    return allAdiantamentos.reduce((total, adiantamento) => total + adiantamento.valor, 0);
+    if (allAdiantamentosStatus === 'loading' || allAdiantamentosStatus === null) return null;
+    if (allAdiantamentosStatus === 'error') return null;
+    if (!Array.isArray(allAdiantamentos)) return 0;
+    return allAdiantamentos.reduce((total, adiantamento) => total + parseValorAdiantamento(adiantamento.valor), 0);
   }
+
+  const totalAdiantamentosValor = calcularTotalAdiantamentos();
+  const exibirTotalNegativoEmVermelho = typeof totalAdiantamentosValor === 'number' && totalAdiantamentosValor < 0;
 
   return(
    <Container>
@@ -382,8 +412,22 @@ export default function ClienteTransactions() {
       
       <Card sx={{ mb: 2, bgcolor: 'primary.light', color: 'white' }}>
         <CardContent>
-          <Typography variant="h6">
-            Total de Adiantamentos: R$ {calcularTotalAdiantamentos().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          <Typography
+            variant="h6"
+            sx={{
+              color: exibirTotalNegativoEmVermelho ? 'error.main' : 'inherit',
+            }}
+          >
+            Total de Adiantamentos:{' '}
+            {allAdiantamentosStatus === 'error' ? (
+              <Box component="span" sx={{ opacity: 0.9 }}>indisponível</Box>
+            ) : totalAdiantamentosValor === null ? (
+              <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, ml: 1 }}>
+                <CircularProgress size={22} sx={{ color: 'inherit' }} />
+              </Box>
+            ) : (
+              `R$ ${totalAdiantamentosValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+            )}
           </Typography>
         </CardContent>
       </Card>
