@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { Container } from "../ClientesPage/style";
 import Produtos from "../../components/Product";
@@ -8,62 +8,59 @@ import { IoArrowBackCircleSharp } from "react-icons/io5";
 export default function ProductsPage() {
   const [products, setProducts] = useState();
   const [product, setProduct] = useState({});
-  const [nome, setNome] = useState('');
+  const [nome, setNome] = useState("");
   const [changeState, setChangeState] = useState(0);
 
   const navigate = useNavigate();
 
+  const bumpList = () => setChangeState((c) => c + 1);
+
   useEffect(() => {
     const promise = axios.get(`${import.meta.env.VITE_URL}/products`);
 
-    promise.then(res => {
+    promise.then((res) => {
       setProduct({});
       setProducts(res.data);
-    })
-    
-  },[changeState]);
+    });
+  }, [changeState]);
 
   async function findByName(event) {
     event.preventDefault();
 
     try {
-      if(!nome) {
-        setChangeState(changeState + 1);
+      if (!nome) {
+        bumpList();
         return;
       }
 
-      const { data:client } = await axios.get(`${import.meta.env.VITE_URL}/products?name=${nome}`);
-      const arr = [];
-
-      arr.push(client);
-
-      setProduct(...arr);
+      const { data: client } = await axios.get(`${import.meta.env.VITE_URL}/products?name=${nome}`);
+      setProduct(Array.isArray(client) ? client : [client]);
     } catch (error) {
       alert(error);
     }
   }
 
-  return(
+  const showFullList = products && Object.keys(product).length === 0;
+  const searchResults = Object.keys(product).length !== 0 ? product : null;
+
+  return (
     <Container>
       <div className="title">
         <h1>Produtos</h1>
         <form onSubmit={findByName}>
-          <input type="text"
+          <input
+            type="text"
             placeholder="Procurar"
             value={nome}
-            onChange={e => setNome(e.target.value)}
+            onChange={(e) => setNome(e.target.value)}
           />
         </form>
       </div>
-      <div className="voltar" onClick={() => navigate('/')}>
+      <div className="voltar" onClick={() => navigate("/")}>
         <IoArrowBackCircleSharp color="crimson" size={60} />
       </div>
-      {
-        products && Object.keys(product).length === 0 ? Produtos(products, setChangeState, changeState) : ""
-      }
-      {
-        Object.keys(product).length !== 0 ? Produtos(product) : ""
-      }
+      {showFullList ? <Produtos items={products} onInvalidate={bumpList} /> : null}
+      {searchResults ? <Produtos items={searchResults} onInvalidate={bumpList} /> : null}
     </Container>
-  )
+  );
 }
